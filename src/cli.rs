@@ -29,16 +29,21 @@ pub struct Cli {
 pub enum CliCommand {
     /// Push a new command to the store
     Push {
+        /// Name to associate with command
         name: String,
+        /// Executable to run, can be bare name within $PATH, or absolute path
         command: String,
+        /// Args of command, split with -- to prevent argument expansion
         args: Vec<String>,
     },
     /// Pop a command from the store
     Pop {
+        /// Name of command to pop
         name: String
     },
     /// Execute a command in the store
     Exec {
+        /// Name of command to execute
         name: String
     },
     /// List available commands
