@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{io::{BufRead, Write}, path::PathBuf};
 use anyhow::Context;
 
 mod command;
@@ -46,7 +46,7 @@ fn main() -> anyhow::Result<()> {
         }.to_str().unwrap()
     );
 
-    let c = CommandStore::new(cache_file)?;
+    let c = CommandStore::new(&cache_file)?;
     let mut global_str = "";
     if cli_args.global {
         global_str = " global";
@@ -97,6 +97,16 @@ fn main() -> anyhow::Result<()> {
             for cmd in c.fetch_all()? {
                 println!("{}", cmd);
             }
+        },
+        CliCommand::Clear => {
+            print!("This will remove all saved commands from the store. Continue? [yn]: ");
+            std::io::stdout().flush()?;
+            let response = std::io::stdin().lock().lines().next()
+                .context("Failed to read response from stdin")??;
+            if response.to_lowercase() == "y" {
+                std::fs::remove_file(cache_file)?;
+            }
+
         }
     }
 

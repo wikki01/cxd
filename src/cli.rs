@@ -48,4 +48,6 @@ pub enum CliCommand {
     },
     /// List available commands
     List,
+    /// Clear all commands from store
+    Clear,
 }
