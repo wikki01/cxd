@@ -75,7 +75,7 @@ fn main() -> anyhow::Result<()> {
 
     match cli_args.command {
         CliCommand::Push { name, command, args } => {
-            if c.insert( Command { id: 0, name: name.clone(), command, args, dir: dir } )? {
+            if c.insert( Command { id: 0, name: name.clone(), command, args, dir } )? {
                 println!("Created{global_str} command: {name}");
             } else {
                 Err(anyhow::anyhow!("Failed to create{global_str} command for {name}, already exists"))?
