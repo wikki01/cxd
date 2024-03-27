@@ -31,7 +31,7 @@ fn main() -> anyhow::Result<()> {
             }
         })
     ).and_then(|p|
-        Some(p.join("cdb.cache"))
+        Some(p.join("cxd.cache"))
     ).context("No suitable path found for cache file")?;
 
 
