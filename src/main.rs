@@ -34,25 +34,22 @@ fn main() -> anyhow::Result<()> {
         Some(p.join("cdb.cache"))
     ).context("No suitable path found for cache file")?;
 
-    let dir = if cli_args.global {
-        PathBuf::new()
-    } else {
-        if let Some(p) = cli_args.dir {
-            std::fs::canonicalize(p)?
-        } else {
-            std::env::current_dir()?
-        }
-    };
 
     let c = CommandStore::new(&cache_file)?;
-    let mut global_str = "";
-    if cli_args.global {
-        global_str = " global";
-    }
 
-    let best_cmd = |name: &str| -> anyhow::Result<Option<Command>> {
+    let get_dir = |dir: &Option<PathBuf>, global: bool| -> anyhow::Result<PathBuf> {
+        Ok(if global {
+            PathBuf::new()
+        } else if let Some(d) = dir {
+            d.into()
+        } else {
+            std::env::current_dir()?
+        })
+    };
+
+    let best_cmd = |name: &str, dir: &PathBuf, strict_match: bool| -> anyhow::Result<Option<Command>> {
         let best_cmd = c.find_cmd(&name, &dir)?;
-        if cli_args.cwd || cli_args.global {
+        if strict_match {
             // Only look for specific command
             return Ok(best_cmd);
         }
@@ -74,21 +71,24 @@ fn main() -> anyhow::Result<()> {
     };
 
     match cli_args.command {
-        CliCommand::Push { name, command, args } => {
-            if c.insert( Command { id: 0, name: name.clone(), command, args, dir } )? {
-                println!("Created{global_str} command: {name}");
+        CliCommand::Push { global, dir, name, command, args } => {
+            let d = get_dir(&dir, global)?;
+            if c.insert( Command { id: 0, name: name.clone(), command, args, dir: d } )? {
+                println!("Created command: {name}");
             } else {
-                Err(anyhow::anyhow!("Failed to create{global_str} command for {name}, already exists"))?
+                Err(anyhow::anyhow!("Failed to create command for {name}, already exists"))?
             }
         },
-        CliCommand::Pop { name } => {
-            let cmd = best_cmd(&name)?
-                .context(format!("No matches found for{global_str} command {name}"))?;
+        CliCommand::Pop { global, dir, cwd, name } => {
+            let d = get_dir(&dir, global)?;
+            let cmd = best_cmd(&name, &d, global || dir.is_some() || cwd)?
+                .context(format!("No matches found for command {name}"))?;
             c.delete_by_id(cmd.id)?;
         },
-        CliCommand::Exec { name } => {
-            let cmd = best_cmd(&name)?
-                .context(format!("No matches found for{global_str} command {name}"))?;
+        CliCommand::Exec { global, dir, cwd, name } => {
+            let d = get_dir(&dir, global)?;
+            let cmd = best_cmd(&name, &d, global || dir.is_some() || cwd)?
+                .context(format!("No matches found for command {name}"))?;
             cmd.exec()?;
         },
         CliCommand::List => {

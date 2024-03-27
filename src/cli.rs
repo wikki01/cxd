@@ -4,18 +4,6 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 pub struct Cli {
-    /// Only use global named commands, rather than dynamically dispatching via cwd
-    #[arg(long, short)]
-    pub global: bool,
-
-    /// Only use commands registered in cwd (or the value of --dir rather if specified)
-    #[arg(long, short)]
-    pub cwd: bool,
-
-    /// Use dir rather than cwd to dispatch
-    #[arg(long, short, conflicts_with = "global")]
-    pub dir: Option<PathBuf>,
-
     /// Set the path to the store database file. Defaults to 
     #[arg(long, short)]
     pub file: Option<String>,
@@ -26,9 +14,22 @@ pub struct Cli {
 }
 
 #[derive(Subcommand)]
+#[command(after_long_help = r#"The default matching order for commands:
+   1. Command matches NAME and CWD
+   2. Command matches NAME and only one exists
+   3. Allow user to select from all commands matching NAME
+"#)]
 pub enum CliCommand {
     /// Push a new command to the store
     Push {
+        /// Push as a global command
+        #[arg(long, short)]
+        global: bool,
+
+        /// Push using dir as reference point rather than CWD
+        #[arg(long, short, conflicts_with = "global")]
+        dir: Option<PathBuf>,
+
         /// Name to associate with command
         name: String,
         /// Executable to run, can be bare name within $PATH, or absolute path
@@ -38,11 +39,35 @@ pub enum CliCommand {
     },
     /// Pop a command from the store
     Pop {
+        /// Only pop global command matching NAME
+        #[arg(long, short)]
+        global: bool,
+
+        /// Only pop global command matching NAME under CWD
+        #[arg(long, short, conflicts_with = "global")]
+        cwd: bool,
+
+        /// Only pop command matching NAME under DIR
+        #[arg(long, short, conflicts_with = "global", conflicts_with = "cwd")]
+        dir: Option<PathBuf>,
+
         /// Name of command to pop
         name: String
     },
     /// Execute a command in the store
     Exec {
+        /// Only exec global command matching NAME
+        #[arg(long, short)]
+        global: bool,
+
+        /// Only exec global command matching NAME under CWD
+        #[arg(long, short, conflicts_with = "global")]
+        cwd: bool,
+
+        /// Only exec command matching NAME under DIR
+        #[arg(long, short, conflicts_with = "global", conflicts_with = "cwd")]
+        dir: Option<PathBuf>,
+
         /// Name of command to execute
         name: String
     },
