@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::command::Command;
 use rusqlite::{ffi::Error, Connection, ErrorCode};
@@ -86,7 +86,7 @@ impl CommandStore {
         // Creating command entry
         let mut command_stmt = self.c
             .prepare("INSERT INTO command (name, command, dir) VALUES (?1, ?2, ?3) RETURNING *")?;
-        let mut result = command_stmt.query((cmd.name, cmd.command, cmd.dir))?;
+        let mut result = command_stmt.query((cmd.name, cmd.command, cmd.dir.to_str().unwrap_or_default()))?;
         let command_row: CommandTable = match result.next() {
             Ok(Some(row)) => CommandTable::try_from(row)?,
             Err(
@@ -132,12 +132,12 @@ impl CommandStore {
         Ok(ret)
     }
 
-    pub fn find_cmd(&self, name: &str, dir: &str) -> anyhow::Result<Option<Command>> {
+    pub fn find_cmd(&self, name: &str, dir: &PathBuf) -> anyhow::Result<Option<Command>> {
         let mut args_stmt = self.c
             .prepare("SELECT * FROM arg WHERE command_id = ?1")?;
         let mut command_stmt = self.c.
             prepare("SELECT * FROM command WHERE name = ?1 AND dir = ?2")?;
-        let mut rows = command_stmt.query((name, dir))?;
+        let mut rows = command_stmt.query((name, dir.to_str().unwrap_or_default()))?;
 
         if let Some(row) = rows.next()? {
             let cmd_row = CommandTable::try_from(row)?;

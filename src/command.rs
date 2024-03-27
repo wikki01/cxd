@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::command_store::{ArgTable, CommandTable};
 
 #[derive(Debug)]
@@ -6,13 +8,13 @@ pub struct Command {
     pub name: String,
     pub command: String,
     // Due to Sqlite not considering NULL as unique, an empty string here signifies None
-    pub dir: String,
+    pub dir: PathBuf,
     pub args: Vec<String>
 }
 
 impl Command {
     pub fn exec(mut self) -> anyhow::Result<()> {
-        if self.dir.len() != 0 {
+        if let None = self.dir.components().next() {
             std::env::set_current_dir(self.dir)?;
         }
         // execvp requires program name to be first arg too
@@ -25,10 +27,10 @@ impl std::fmt::Display for Command {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Command: {}", self.name)?; 
         writeln!(f, "\texec: {} {}", self.command, self.args.join(" "))?;
-        if self.dir.len() == 0 {
+        if let None = self.dir.components().next() {
             writeln!(f, "\tscope: Global")?; 
         } else {
-            writeln!(f, "\tscope: {}", self.dir)?; 
+            writeln!(f, "\tscope: {}", self.dir.to_str().unwrap_or("invalid path"))?; 
         }
         Ok(())
     }
@@ -40,7 +42,7 @@ impl From<(CommandTable, Vec<ArgTable>)> for Command {
             id: cmd_row.id,
             name: cmd_row.name,
             command: cmd_row.command,
-            dir: cmd_row.dir,
+            dir: cmd_row.dir.into(),
             args: arg_rows.into_iter().map(|a| a.data).collect()
         } 
     }

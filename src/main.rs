@@ -34,17 +34,15 @@ fn main() -> anyhow::Result<()> {
         Some(p.join("cdb.cache"))
     ).context("No suitable path found for cache file")?;
 
-    let dir = String::from(
-        if cli_args.global {
-            PathBuf::new()
+    let dir = if cli_args.global {
+        PathBuf::new()
+    } else {
+        if let Some(p) = cli_args.dir {
+            std::fs::canonicalize(p)?
         } else {
-            if let Some(p) = cli_args.dir {
-                std::fs::canonicalize(p)?
-            } else {
-                std::env::current_dir()?
-            }
-        }.to_str().unwrap()
-    );
+            std::env::current_dir()?
+        }
+    };
 
     let c = CommandStore::new(&cache_file)?;
     let mut global_str = "";
@@ -77,7 +75,7 @@ fn main() -> anyhow::Result<()> {
 
     match cli_args.command {
         CliCommand::Push { name, command, args } => {
-            if c.insert( Command { id: 0, name: name.clone(), command, args, dir: dir.to_string() } )? {
+            if c.insert( Command { id: 0, name: name.clone(), command, args, dir: dir } )? {
                 println!("Created{global_str} command: {name}");
             } else {
                 Err(anyhow::anyhow!("Failed to create{global_str} command for {name}, already exists"))?
