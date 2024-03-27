@@ -14,6 +14,13 @@ at a later time. Database cache files can be saved and reused across devices. Ho
 note that you should **NEVER** trust a cache file from an outside source, as `cxd exec`
 will execute arbitrary commands from the database.
 
+### Default Command Matching
+CXD attempts to find the best match for each input using the following hierarchy.
+
+1. Command matches NAME and is in CWD
+1. Command matches NAME and is only match
+1. Let user select between all commands matching NAME
+
 ### Selecting Cache File
 By default, `cxd` will attempt to store the cache file in the following locations, and 
 fail if unable to construct any.
