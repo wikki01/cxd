@@ -1,5 +1,5 @@
 # CXD
-Command Executor per Directory (CXD) provides a simple interface to save and execute
+Command Executor per Directory (`cxd`) provides a simple interface to save and execute
 commands within specific directories. 
 
 ## Background
@@ -9,17 +9,17 @@ custom scripts and Makefiles to each directory. This allowed me to not have to r
 events overwriting my temporary Makefiles, I wrote `cxd`.
 
 ## Use
-CXD uses a `sqlite` database to save commands and their respective directories to execute
+`cxd` uses a `sqlite` database to save commands and their respective directories to execute
 at a later time. Database cache files can be saved and reused across devices. However,
 note that you should **NEVER** trust a cache file from an outside source, as `cxd exec`
 will execute arbitrary commands from the database.
 
 ### Default Command Matching
-CXD attempts to find the best match for each input using the following hierarchy.
+`cxd` attempts to find the best match for each input using the following hierarchy.
 
-1. Command matches NAME and is in CWD
-1. Command matches NAME and is only match
-1. Let user select between all commands matching NAME
+1. Command matches `NAME` and is in `$CWD`
+1. Command matches `NAME` and is only match
+1. Let user select between all commands matching `NAME`
 
 ### Selecting Cache File
 By default, `cxd` will attempt to store the cache file in the following locations, and 
