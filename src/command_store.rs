@@ -168,7 +168,7 @@ impl CommandStore {
 
     pub fn fetch_all(&self) -> anyhow::Result<Vec<Command>> {
         let mut args_stmt = self.c
-            .prepare("SELECT * FROM arg")?;
+            .prepare("SELECT * FROM arg WHERE command_id = ?1")?;
         let mut command_stmt = self.c
             .prepare("SELECT * FROM command")?;
         let mut rows = command_stmt.query(())?;
@@ -179,7 +179,7 @@ impl CommandStore {
 
             // Fetching associated args
             let mut args = vec!();
-            let mut rows = args_stmt.query(())?;
+            let mut rows = args_stmt.query([cmd_row.id])?;
             while let Some(row) = rows.next()? {
                 args.push(ArgTable::try_from(row)?);
             }
