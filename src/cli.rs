@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 pub struct Cli {
-    /// Set the path to the store database file. Defaults to 
+    /// Set the path to the store database file. Defaults to
     #[arg(long, short)]
     pub file: Option<String>,
 
@@ -52,7 +52,7 @@ pub enum CliCommand {
         dir: Option<PathBuf>,
 
         /// Name of command to pop
-        name: String
+        name: String,
     },
     /// Execute a command in the store
     Exec {
@@ -69,7 +69,7 @@ pub enum CliCommand {
         dir: Option<PathBuf>,
 
         /// Name of command to execute
-        name: String
+        name: String,
     },
     /// List available commands
     List,

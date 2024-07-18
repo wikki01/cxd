@@ -9,7 +9,7 @@ pub struct Command {
     pub command: String,
     // Due to Sqlite not considering NULL as unique, an empty string here signifies None
     pub dir: PathBuf,
-    pub args: Vec<String>
+    pub args: Vec<String>,
 }
 
 impl Command {
@@ -25,12 +25,16 @@ impl Command {
 
 impl std::fmt::Display for Command {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Command: {}", self.name)?; 
+        writeln!(f, "Command: {}", self.name)?;
         writeln!(f, "\texec: {} {}", self.command, self.args.join(" "))?;
         if let None = self.dir.components().next() {
-            writeln!(f, "\tscope: Global")?; 
+            writeln!(f, "\tscope: Global")?;
         } else {
-            writeln!(f, "\tscope: {}", self.dir.to_str().unwrap_or("invalid path"))?; 
+            writeln!(
+                f,
+                "\tscope: {}",
+                self.dir.to_str().unwrap_or("invalid path")
+            )?;
         }
         Ok(())
     }
@@ -43,7 +47,7 @@ impl From<(CommandTable, Vec<ArgTable>)> for Command {
             name: cmd_row.name,
             command: cmd_row.command,
             dir: cmd_row.dir.into(),
-            args: arg_rows.into_iter().map(|a| a.data).collect()
-        } 
+            args: arg_rows.into_iter().map(|a| a.data).collect(),
+        }
     }
 }
