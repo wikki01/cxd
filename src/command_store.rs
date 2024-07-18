@@ -3,85 +3,11 @@ use std::path::{Path, PathBuf};
 use crate::command::Command;
 use rusqlite::{ffi::Error, Connection, ErrorCode};
 
-pub struct ArgTable {
-    pub id: i64,
-    pub command_id: i64,
-    pub data: String,
-}
+mod arg_row;
+mod cmd_row;
 
-impl ArgTable {
-    fn create(c: &Connection) -> rusqlite::Result<()> {
-        c.execute(
-            r#"
-            CREATE TABLE IF NOT EXISTS arg (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                command_id  INTEGER NOT NULL,
-                data        TEXT NOT NULL,
-                UNIQUE(id)
-                FOREIGN KEY(command_id) REFERENCES command(id)
-                ON DELETE CASCADE ON UPDATE CASCADE
-            )
-        "#,
-            (),
-        )?;
-        Ok(())
-    }
-}
-
-impl<'a> TryFrom<&rusqlite::Row<'a>> for ArgTable {
-    type Error = rusqlite::Error;
-    fn try_from(row: &rusqlite::Row<'a>) -> Result<Self, Self::Error> {
-        let id: i64 = row.get("id")?;
-        let command_id: i64 = row.get("command_id")?;
-        let data: String = row.get("data")?;
-        Ok(Self {
-            id,
-            command_id,
-            data,
-        })
-    }
-}
-pub struct CommandTable {
-    pub id: i64,
-    pub name: String,
-    pub command: String,
-    pub dir: String,
-}
-
-impl CommandTable {
-    fn create(c: &Connection) -> rusqlite::Result<()> {
-        c.execute(
-            r#"
-            CREATE TABLE IF NOT EXISTS command (
-                id      INTEGER PRIMARY KEY AUTOINCREMENT,
-                name    TEXT NOT NULL,
-                command TEXT NOT NULL,
-                dir     TEXT NOT NULL,
-                UNIQUE(id)
-                UNIQUE(name, dir)
-            )
-        "#,
-            (),
-        )?;
-        Ok(())
-    }
-}
-
-impl<'a> TryFrom<&rusqlite::Row<'a>> for CommandTable {
-    type Error = rusqlite::Error;
-    fn try_from(row: &rusqlite::Row<'a>) -> Result<Self, Self::Error> {
-        let id: i64 = row.get("id")?;
-        let name: String = row.get("name")?;
-        let command: String = row.get("command")?;
-        let dir: String = row.get("dir")?;
-        Ok(Self {
-            id,
-            name,
-            command,
-            dir,
-        })
-    }
-}
+pub use arg_row::ArgRow;
+pub use cmd_row::CmdRow;
 
 pub struct CommandStore {
     c: Connection,
@@ -92,8 +18,8 @@ impl CommandStore {
         let c = Connection::open(path)?;
         // Enable foreign key support
         c.execute("PRAGMA foreign_keys = ON", ())?;
-        CommandTable::create(&c)?;
-        ArgTable::create(&c)?;
+        CmdRow::create(&c)?;
+        ArgRow::create(&c)?;
         Ok(Self { c })
     }
 
@@ -104,8 +30,8 @@ impl CommandStore {
             .prepare("INSERT INTO command (name, command, dir) VALUES (?1, ?2, ?3) RETURNING *")?;
         let mut result =
             command_stmt.query((cmd.name, cmd.command, cmd.dir.to_str().unwrap_or_default()))?;
-        let command_row: CommandTable = match result.next() {
-            Ok(Some(row)) => CommandTable::try_from(row)?,
+        let command_row: CmdRow = match result.next() {
+            Ok(Some(row)) => CmdRow::try_from(row)?,
             Err(rusqlite::Error::SqliteFailure(
                 Error {
                     code: ErrorCode::ConstraintViolation,
@@ -137,13 +63,13 @@ impl CommandStore {
 
         let mut ret = vec![];
         while let Some(row) = rows.next()? {
-            let cmd_row = CommandTable::try_from(row)?;
+            let cmd_row = CmdRow::try_from(row)?;
 
             // Fetching associated args
             let mut args = vec![];
             let mut rows = args_stmt.query([cmd_row.id])?;
             while let Some(row) = rows.next()? {
-                args.push(ArgTable::try_from(row)?);
+                args.push(ArgRow::try_from(row)?);
             }
             ret.push(Command::from((cmd_row, args)));
         }
@@ -158,13 +84,13 @@ impl CommandStore {
         let mut rows = command_stmt.query((name, dir.to_str().unwrap_or_default()))?;
 
         if let Some(row) = rows.next()? {
-            let cmd_row = CommandTable::try_from(row)?;
+            let cmd_row = CmdRow::try_from(row)?;
 
             // Fetching associated args
             let mut args = vec![];
             let mut rows = args_stmt.query([cmd_row.id])?;
             while let Some(row) = rows.next()? {
-                args.push(ArgTable::try_from(row)?);
+                args.push(ArgRow::try_from(row)?);
             }
             Ok(Some(Command::from((cmd_row, args))))
         } else {
@@ -190,13 +116,13 @@ impl CommandStore {
 
         let mut ret = vec![];
         while let Some(row) = rows.next()? {
-            let cmd_row = CommandTable::try_from(row)?;
+            let cmd_row = CmdRow::try_from(row)?;
 
             // Fetching associated args
             let mut args = vec![];
             let mut rows = args_stmt.query([cmd_row.id])?;
             while let Some(row) = rows.next()? {
-                args.push(ArgTable::try_from(row)?);
+                args.push(ArgRow::try_from(row)?);
             }
             ret.push(Command::from((cmd_row, args)));
         }

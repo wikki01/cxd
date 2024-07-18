@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::command_store::{ArgTable, CommandTable};
+use crate::command_store::{ArgRow, CmdRow};
 
 #[derive(Debug)]
 pub struct Command {
@@ -40,8 +40,8 @@ impl std::fmt::Display for Command {
     }
 }
 
-impl From<(CommandTable, Vec<ArgTable>)> for Command {
-    fn from((cmd_row, arg_rows): (CommandTable, Vec<ArgTable>)) -> Self {
+impl From<(CmdRow, Vec<ArgRow>)> for Command {
+    fn from((cmd_row, arg_rows): (CmdRow, Vec<ArgRow>)) -> Self {
         Self {
             id: cmd_row.id,
             name: cmd_row.name,
