@@ -4,7 +4,9 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 pub struct Cli {
-    /// Set the path to the store database file. Defaults to
+    /// Set the path to the store database file
+    ///
+    /// Defaults to first of: $XDG_CACHE_HOME/cxd.cache, $HOME/.config/cxd.cache
     #[arg(long, short)]
     pub file: Option<String>,
 

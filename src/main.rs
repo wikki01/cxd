@@ -31,7 +31,7 @@ fn main() -> anyhow::Result<()> {
             if p.len() == 0 {
                 None
             } else {
-                Some(PathBuf::from(p).join(".cache"))
+                Some(PathBuf::from(p).join(".config"))
             }
         }))
         .and_then(|p| Some(p.join("cxd.cache")))
