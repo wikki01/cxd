@@ -80,6 +80,7 @@ fn main() -> anyhow::Result<()> {
             name,
             command,
             args,
+            env,
         } => {
             let d = get_dir(&dir, global)?;
             if c.insert(Command {
@@ -87,6 +88,7 @@ fn main() -> anyhow::Result<()> {
                 name: name.clone(),
                 command,
                 args,
+                envs: env,
                 dir: d,
             })? {
                 println!("Created command: {name}");

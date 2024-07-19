@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{error::Error, path::PathBuf};
 
 use clap::{Parser, Subcommand};
 
@@ -29,6 +29,10 @@ pub enum CliCommand {
         /// Push using dir as reference point rather than CWD
         #[arg(long, short, conflicts_with = "global")]
         dir: Option<PathBuf>,
+
+        /// Add an environment variable to the command. Specified as a <KEY>=<VALUE> pair.
+        #[arg(long, short, value_parser = parse_key_value::<String, String>, number_of_values = 1, value_name = "KEY>=<VALUE")]
+        env: Vec<(String, String)>,
 
         /// Name to associate with command
         name: String,
@@ -75,4 +79,19 @@ pub enum CliCommand {
     List,
     /// Clear all commands from store
     Clear,
+}
+
+/// Parse a single key-value pair
+/// "Borrowed" from https://github.com/clap-rs/clap/blob/master/examples/typed-derive.rs
+fn parse_key_value<T, U>(s: &str) -> Result<(T, U), Box<dyn Error + Send + Sync>>
+where
+    T: std::str::FromStr,
+    T::Err: Error + Send + Sync + 'static,
+    U: std::str::FromStr,
+    U::Err: Error + Send + Sync + 'static,
+{
+    let pos = s
+        .find('=')
+        .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{s}`"))?;
+    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }

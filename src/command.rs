@@ -1,6 +1,6 @@
-use std::path::PathBuf;
+use std::{os::unix::process::CommandExt, path::PathBuf};
 
-use crate::command_store::{ArgRow, CmdRow};
+use crate::command_store::{ArgRow, CmdRow, EnvRow};
 
 #[derive(Debug)]
 pub struct Command {
@@ -10,16 +10,31 @@ pub struct Command {
     // Due to Sqlite not considering NULL as unique, an empty string here signifies None
     pub dir: PathBuf,
     pub args: Vec<String>,
+    pub envs: Vec<(String, String)>,
 }
 
 impl Command {
-    pub fn exec(mut self) -> anyhow::Result<()> {
-        if let None = self.dir.components().next() {
+    pub fn new(cmd_row: CmdRow, arg_rows: Vec<ArgRow>, env_rows: Vec<EnvRow>) -> Self {
+        Self {
+            id: cmd_row.id,
+            name: cmd_row.name,
+            command: cmd_row.command,
+            dir: cmd_row.dir.into(),
+            args: arg_rows.into_iter().map(|a| a.data).collect(),
+            envs: env_rows.into_iter().map(|a| (a.key, a.value)).collect(),
+        }
+    }
+
+    pub fn exec(self) -> anyhow::Result<()> {
+        if self.dir.components().next().is_some() {
             std::env::set_current_dir(self.dir)?;
         }
         // execvp requires program name to be first arg too
-        self.args.insert(0, self.command.clone());
-        Err(exec::execvp(self.command, self.args))?
+        Err(std::process::Command::new(self.command.clone())
+            .args(self.args)
+            .envs(self.envs)
+            .exec()
+            .into())
     }
 }
 
@@ -37,17 +52,5 @@ impl std::fmt::Display for Command {
             )?;
         }
         Ok(())
-    }
-}
-
-impl From<(CmdRow, Vec<ArgRow>)> for Command {
-    fn from((cmd_row, arg_rows): (CmdRow, Vec<ArgRow>)) -> Self {
-        Self {
-            id: cmd_row.id,
-            name: cmd_row.name,
-            command: cmd_row.command,
-            dir: cmd_row.dir.into(),
-            args: arg_rows.into_iter().map(|a| a.data).collect(),
-        }
     }
 }
