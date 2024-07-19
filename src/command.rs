@@ -42,14 +42,8 @@ impl std::fmt::Display for Command {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Command: {}", self.name)?;
         writeln!(f, "  exec: {} {}", self.command, self.args.join(" "))?;
-        if let None = self.dir.components().next() {
-            writeln!(f, "  scope: Global")?;
-        } else {
-            writeln!(
-                f,
-                "  scope: {}",
-                self.dir.to_str().unwrap_or("invalid path")
-            )?;
+        if self.dir.components().next().is_some() {
+            writeln!(f, "  dir: {}", self.dir.to_str().unwrap_or("invalid path"))?;
         }
         if !self.envs.is_empty() {
             writeln!(f, "  env:")?;
