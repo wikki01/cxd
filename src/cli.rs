@@ -22,13 +22,13 @@ pub struct Cli {
    3. Allow user to select from all commands matching NAME
 "#)]
 pub enum CliCommand {
-    /// Add a new command to the store
+    /// Add a new command to the store. By default, sets the command's working directory to CWD.
     Add {
-        /// Push as a global command
+        /// Add as a global command without associating a specific working directory
         #[arg(long, short)]
         global: bool,
 
-        /// Push using dir as reference point rather than CWD
+        /// Add using DIR as reference point rather than CWD
         #[arg(long, short, conflicts_with = "global")]
         dir: Option<PathBuf>,
 
@@ -46,32 +46,32 @@ pub enum CliCommand {
     },
     /// Remove a command from the store
     Remove {
-        /// Only pop global command matching NAME
+        /// Search only global commands
         #[arg(long, short)]
         global: bool,
 
-        /// Only pop global command matching NAME under CWD
+        /// Search only commands with the CWD registered as their working directory
         #[arg(long, short, conflicts_with = "global")]
         cwd: bool,
 
-        /// Only pop command matching NAME under DIR
+        /// Search only commands with DIR registered as their working directory
         #[arg(long, short, conflicts_with = "global", conflicts_with = "cwd")]
         dir: Option<PathBuf>,
 
-        /// Name of command to pop
+        /// Name of command to remove
         name: String,
     },
     /// Execute a command in the store
     Exec {
-        /// Only exec global command matching NAME
+        /// Search only global commands
         #[arg(long, short)]
         global: bool,
 
-        /// Only exec global command matching NAME under CWD
+        /// Search only commands with the CWD registered as their working directory
         #[arg(long, short, conflicts_with = "global")]
         cwd: bool,
 
-        /// Only exec command matching NAME under DIR
+        /// Search only commands with DIR registered as their working directory
         #[arg(long, short, conflicts_with = "global", conflicts_with = "cwd")]
         dir: Option<PathBuf>,
 
