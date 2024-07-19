@@ -51,6 +51,12 @@ impl std::fmt::Display for Command {
                 self.dir.to_str().unwrap_or("invalid path")
             )?;
         }
+        if !self.envs.is_empty() {
+            writeln!(f, "\tenv:")?;
+            for (k, v) in self.envs.iter() {
+                writeln!(f, "\t\t{k}={v}")?;
+            }
+        }
         Ok(())
     }
 }
