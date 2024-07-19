@@ -38,7 +38,8 @@ pub enum CliCommand {
         name: String,
         /// Executable to run, can be bare name within $PATH, or absolute path
         command: String,
-        /// Args of command, split with -- to prevent argument expansion
+        /// Args of command
+        #[arg(allow_hyphen_values = true, trailing_var_arg = true)]
         args: Vec<String>,
     },
     /// Pop a command from the store
