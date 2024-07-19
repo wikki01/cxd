@@ -20,8 +20,8 @@ pub struct Cli {
    3. Allow user to select from all commands matching NAME
 "#)]
 pub enum CliCommand {
-    /// Push a new command to the store
-    Push {
+    /// Add a new command to the store
+    Add {
         /// Push as a global command
         #[arg(long, short)]
         global: bool,
@@ -42,8 +42,8 @@ pub enum CliCommand {
         #[arg(allow_hyphen_values = true, trailing_var_arg = true)]
         args: Vec<String>,
     },
-    /// Pop a command from the store
-    Pop {
+    /// Remove a command from the store
+    Remove {
         /// Only pop global command matching NAME
         #[arg(long, short)]
         global: bool,

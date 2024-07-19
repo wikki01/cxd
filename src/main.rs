@@ -74,7 +74,7 @@ fn main() -> anyhow::Result<()> {
         };
 
     match cli_args.command {
-        CliCommand::Push {
+        CliCommand::Add {
             global,
             dir,
             name,
@@ -98,7 +98,7 @@ fn main() -> anyhow::Result<()> {
                 ))?
             }
         }
-        CliCommand::Pop {
+        CliCommand::Remove {
             global,
             dir,
             cwd,
