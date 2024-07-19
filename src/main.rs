@@ -31,7 +31,7 @@ fn main() -> anyhow::Result<()> {
             if p.len() == 0 {
                 None
             } else {
-                Some(PathBuf::from(p).join(".config"))
+                Some(PathBuf::from(p).join(".cache"))
             }
         }))
         .and_then(|p| Some(p.join("cxd.cache")))
@@ -102,12 +102,18 @@ fn main() -> anyhow::Result<()> {
             global,
             dir,
             cwd,
+            id,
             name,
         } => {
-            let d = get_dir(&dir, global)?;
-            let cmd = best_cmd(&name, &d, global || dir.is_some() || cwd)?
-                .context(format!("No matches found for command {name}"))?;
-            c.delete_by_id(cmd.id)?;
+            if let Some(id) = id {
+                c.delete_by_id(id)?;
+            } else {
+                let name = name.unwrap();
+                let d = get_dir(&dir, global)?;
+                let cmd = best_cmd(&name, &d, global || dir.is_some() || cwd)?
+                    .context(format!("No matches found for command {name}"))?;
+                c.delete_by_id(cmd.id)?;
+            }
         }
         CliCommand::Exec {
             global,
@@ -120,9 +126,15 @@ fn main() -> anyhow::Result<()> {
                 .context(format!("No matches found for command {name}"))?;
             cmd.exec()?;
         }
-        CliCommand::List => {
-            for cmd in c.fetch_all()? {
-                println!("{}", cmd);
+        CliCommand::List { id } => {
+            if id {
+                for cmd in c.fetch_all()? {
+                    println!("{:+}", cmd);
+                }
+            } else {
+                for cmd in c.fetch_all()? {
+                    println!("{}", cmd);
+                }
             }
         }
         CliCommand::Clear => {

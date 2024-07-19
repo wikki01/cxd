@@ -100,7 +100,7 @@ impl CommandStore {
 
     pub fn fetch_all(&self) -> anyhow::Result<Vec<Command>> {
         let mut command_stmt = self.c.prepare("SELECT * FROM command")?;
-        let mut rows = command_stmt.query(())?;
+        let mut rows = command_stmt.query([])?;
         self.assemble(&mut rows)
     }
 

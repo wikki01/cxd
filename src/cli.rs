@@ -6,7 +6,7 @@ use clap::{Parser, Subcommand};
 pub struct Cli {
     /// Set the path to the store database file
     ///
-    /// Defaults to first of: $XDG_CACHE_HOME/cxd.cache, $HOME/.config/cxd.cache
+    /// Defaults to first of: $XDG_CACHE_HOME/cxd.cache, $HOME/.cache/cxd.cache
     #[arg(long, short)]
     pub file: Option<String>,
 
@@ -22,7 +22,9 @@ pub struct Cli {
    3. Allow user to select from all commands matching NAME
 "#)]
 pub enum CliCommand {
-    /// Add a new command to the store. By default, sets the command's working directory to CWD.
+    /// Add a new command to the store.
+    ///
+    /// By default, sets the command's working directory to CWD.
     Add {
         /// Add as a global command without associating a specific working directory
         #[arg(long, short)]
@@ -32,7 +34,7 @@ pub enum CliCommand {
         #[arg(long, short, conflicts_with = "global")]
         dir: Option<PathBuf>,
 
-        /// Add an environment variable to the command. Specified as a <KEY>=<VALUE> pair.
+        /// Add an environment variable to the command. May be specified multiple times.
         #[arg(long, short, value_parser = parse_key_value::<String, String>, number_of_values = 1, value_name = "KEY>=<VALUE")]
         env: Vec<(String, String)>,
 
@@ -58,8 +60,13 @@ pub enum CliCommand {
         #[arg(long, short, conflicts_with = "global", conflicts_with = "cwd")]
         dir: Option<PathBuf>,
 
-        /// Name of command to remove
-        name: String,
+        /// Remove a command by a specific internal ID.
+        #[arg(long, short, conflicts_with_all = ["dir", "cwd", "global", "name"])]
+        id: Option<i64>,
+
+        /// Name of command to remove. Required unless -i/--id specified
+        #[arg(required_unless_present = "id")]
+        name: Option<String>,
     },
     /// Execute a command in the store
     Exec {
@@ -79,7 +86,11 @@ pub enum CliCommand {
         name: String,
     },
     /// List available commands
-    List,
+    List {
+        /// Show the internal IDs of each command
+        #[arg(long, short)]
+        id: bool,
+    },
     /// Clear all commands from store
     Clear,
 }

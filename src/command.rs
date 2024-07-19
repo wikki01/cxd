@@ -39,8 +39,12 @@ impl Command {
 }
 
 impl std::fmt::Display for Command {
+    /// Command formatting - the plus (`+`) flag can be used to display the ID.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Command: {}", self.name)?;
+        if f.sign_plus() {
+            writeln!(f, "  id: {}", self.id)?;
+        }
         writeln!(f, "  exec: {} {}", self.command, self.args.join(" "))?;
         if self.dir.components().next().is_some() {
             writeln!(f, "  dir: {}", self.dir.to_str().unwrap_or("invalid path"))?;
