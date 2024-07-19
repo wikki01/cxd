@@ -41,20 +41,20 @@ impl Command {
 impl std::fmt::Display for Command {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "Command: {}", self.name)?;
-        writeln!(f, "\texec: {} {}", self.command, self.args.join(" "))?;
+        writeln!(f, "  exec: {} {}", self.command, self.args.join(" "))?;
         if let None = self.dir.components().next() {
-            writeln!(f, "\tscope: Global")?;
+            writeln!(f, "  scope: Global")?;
         } else {
             writeln!(
                 f,
-                "\tscope: {}",
+                "  scope: {}",
                 self.dir.to_str().unwrap_or("invalid path")
             )?;
         }
         if !self.envs.is_empty() {
-            writeln!(f, "\tenv:")?;
+            writeln!(f, "  env:")?;
             for (k, v) in self.envs.iter() {
-                writeln!(f, "\t\t{k}={v}")?;
+                writeln!(f, "    {k}={v}")?;
             }
         }
         Ok(())
