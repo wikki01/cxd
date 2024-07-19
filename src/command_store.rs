@@ -26,13 +26,16 @@ impl CommandStore {
         Ok(Self { c })
     }
 
-    pub fn insert(&self, cmd: Command) -> anyhow::Result<bool> {
+    pub fn insert(&self, cmd: &Command) -> anyhow::Result<bool> {
         // Creating command entry
         let mut command_stmt = self
             .c
             .prepare("INSERT INTO command (name, command, dir) VALUES (?1, ?2, ?3) RETURNING *")?;
-        let mut result =
-            command_stmt.query((cmd.name, cmd.command, cmd.dir.to_str().unwrap_or_default()))?;
+        let mut result = command_stmt.query((
+            &cmd.name,
+            &cmd.command,
+            cmd.dir.to_str().unwrap_or_default(),
+        ))?;
         let command_row: CmdRow = match result.next() {
             Ok(Some(row)) => CmdRow::try_from(row)?,
             Err(rusqlite::Error::SqliteFailure(
@@ -53,7 +56,7 @@ impl CommandStore {
         let mut args_stmt = self
             .c
             .prepare("INSERT INTO arg (data, command_id) VALUES (?1, ?2)")?;
-        for arg in cmd.args {
+        for arg in &cmd.args {
             args_stmt.execute((arg, command_row.id))?;
         }
 
@@ -61,8 +64,8 @@ impl CommandStore {
         let mut envs_stmt = self
             .c
             .prepare("INSERT INTO env (key, value, command_id) VALUES (?1, ?2, ?3)")?;
-        for env in cmd.envs {
-            envs_stmt.execute((env.0, env.1, command_row.id))?;
+        for env in &cmd.envs {
+            envs_stmt.execute((&env.0, &env.1, command_row.id))?;
         }
         Ok(true)
     }

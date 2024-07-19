@@ -69,7 +69,19 @@ fn main() -> anyhow::Result<()> {
                 Ok(Some(cmds.pop().unwrap()))
             } else {
                 // We have multiple matches, should ask user
-                todo!();
+                let mut map = std::collections::HashMap::new();
+                for cmd in cmds.into_iter() {
+                    println!("{:+}", cmd);
+                    map.insert(cmd.id, cmd);
+                }
+                print!("\nCommand id: ");
+                std::io::stdout().flush()?;
+                let mut input = String::new();
+                std::io::stdin()
+                    .read_line(&mut input)
+                    .context("Failed to read from STDIN")?;
+                let id: i64 = input.trim().parse().context("Malformed id")?;
+                Ok(map.remove(&id))
             }
         };
 
@@ -83,18 +95,19 @@ fn main() -> anyhow::Result<()> {
             env,
         } => {
             let d = get_dir(&dir, global)?;
-            if c.insert(Command {
+            let cmd = Command {
                 id: 0,
                 name: name.clone(),
                 command,
                 args,
                 envs: env,
                 dir: d,
-            })? {
-                println!("Created command: {name}");
+            };
+            if c.insert(&cmd)? {
+                println!("Created {cmd}");
             } else {
                 Err(anyhow::anyhow!(
-                    "Failed to create command for {name}, already exists"
+                    "Failed to create command {name}: already exists"
                 ))?
             }
         }
@@ -112,7 +125,11 @@ fn main() -> anyhow::Result<()> {
                 let d = get_dir(&dir, global)?;
                 let cmd = best_cmd(&name, &d, global || dir.is_some() || cwd)?
                     .context(format!("No matches found for command {name}"))?;
-                c.delete_by_id(cmd.id)?;
+                if c.delete_by_id(cmd.id)? {
+                    println!("Deleted {}", cmd);
+                } else {
+                    println!("No matching command found, nothing was deleted");
+                }
             }
         }
         CliCommand::Exec {
