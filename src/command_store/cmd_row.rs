@@ -6,7 +6,7 @@ pub struct CmdRow {
 }
 
 impl CmdRow {
-    pub fn create(c: &rusqlite::Connection) -> rusqlite::Result<()> {
+    pub fn init(c: &rusqlite::Connection) -> rusqlite::Result<()> {
         c.execute(
             r#"
             CREATE TABLE IF NOT EXISTS command (

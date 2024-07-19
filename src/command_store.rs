@@ -18,8 +18,8 @@ impl CommandStore {
         let c = Connection::open(path)?;
         // Enable foreign key support
         c.execute("PRAGMA foreign_keys = ON", ())?;
-        CmdRow::create(&c)?;
-        ArgRow::create(&c)?;
+        CmdRow::init(&c)?;
+        ArgRow::init(&c)?;
         Ok(Self { c })
     }
 
