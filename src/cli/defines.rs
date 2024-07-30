@@ -8,6 +8,13 @@ pub const USAGE: &str = "cxd [OPTIONS] <NAME>|<OPERATION>";
 
 const HELP_ARG_DESC: &str = "Show this help message";
 
+const FILE_DESC: &str = "File to use as the backing command cache";
+const FILE_LONG_USAGE: &str = "-f, --file";
+const FILE_LONG_HELP: &str = concatcp!(FILE_DESC, r#"
+
+Defaults to first of: $XDG_CACHE_HOME/cxd.cache, $HOME/.cache/cxd.cache
+"#);
+
 const ADD_DESC: &str = "Add a new command to the database";
 pub const ADD_LONG_USAGE: &str = "-a, --add [OPTIONS] <NAME> <CMD> [ARG]...";
 pub const ADD_LONG_HELP: &str = concatcp!(ADD_DESC, r#"
@@ -37,15 +44,15 @@ Remove Options:
 "#);
 
 pub const LIST_DESC: &str = "List available commands";
-const LIST_LONG_USAGE: &str = "-l, --list [OPTIONS]";
-const LIST_LONG_HELP: &str = concatcp!(LIST_DESC, r#"
+pub const LIST_LONG_USAGE: &str = "-l, --list [OPTIONS]";
+pub const LIST_LONG_HELP: &str = concatcp!(LIST_DESC, r#"
 
 List Options:
-  -l, --list         Show internal IDs of commands
+  -i, --id           Show internal IDs of commands
   -h, --help         "#, HELP_ARG_DESC, r#"
 "#);
 
-const CLEAR_LONG_USAGE: &str = "-c, --clear";
+pub const CLEAR_LONG_USAGE: &str = "--clear";
 pub const CLEAR_DESC: &str = "Clear all commands from the database";
 pub const CLEAR_LONG_HELP: &str = CLEAR_DESC; // Nothing more to add
 
@@ -54,6 +61,16 @@ r#"Usage: "#, USAGE, r#"
 
 Arguments:
   <NAME>   Name of command to execute
+
+Options:
+  "#, FILE_LONG_USAGE, r#"
+      "#, str_replace!(FILE_LONG_HELP, "\n", "\n      "), r#"
+
+  -h
+      Show the short version of this help message
+
+  --help
+      "#, HELP_ARG_DESC, r#"
 
 Operations:
   "#, ADD_LONG_USAGE, r#"
@@ -67,12 +84,6 @@ Operations:
 
   "#, CLEAR_LONG_USAGE, r#"
       "#, str_replace!(CLEAR_LONG_HELP, "\n", "\n      "), r#"
-
-  -h 
-      Show the short version of this help message
-
-  --help         
-      "#, HELP_ARG_DESC, r#"
 "#);
 
 pub const SHORT_HELP: &str = concatcp!(
@@ -81,11 +92,14 @@ r#"Usage: "#, USAGE, r#"
 Arguments:
   <NAME>   Name of command to execute
 
+Options:
+  -f, --file <FILE>                "#, FILE_DESC, r#"
+
 Operations:
   -a, --add <NAME> <CMD> [ARG]...  "#, ADD_DESC, r#"
   -r, --remove <COMMAND>           "#, REMOVE_DESC, r#"
   -l, --list                       "#, LIST_DESC, r#"
-  -c, --clear                      "#, CLEAR_DESC, r#"
+  --clear                          "#, CLEAR_DESC, r#"
   -h                               "#, HELP_ARG_DESC, r#"
   --help                           Show the long version of this help message
 "#);

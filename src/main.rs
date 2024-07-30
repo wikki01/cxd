@@ -1,3 +1,4 @@
+#![allow(unused)]
 use anyhow::Context;
 use std::{
     io::{BufRead, Write},
@@ -11,9 +12,26 @@ mod command_store;
 use command_store::CommandStore;
 
 mod cli;
+use cli::{print_long_help, print_op_help, print_short_help, HelpType};
 
 fn main() -> anyhow::Result<()> {
-    cli::parse_args()?;
+    let args = cli::parse_args()?;
+    match args.help {
+        Some(HelpType::Long) => {
+            if let Some(op) = args.op {
+                print_op_help(op);
+            } else {
+                print_long_help();
+            }
+            return Ok(());
+        }
+        Some(HelpType::Short) => {
+            print_short_help();
+            return Ok(());
+        }
+        _ => {}
+    }
+    dbg!(args);
 
     /*let cache_file = cli_args
         .file
