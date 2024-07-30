@@ -70,23 +70,20 @@ impl CommandStore {
         Ok(true)
     }
 
-    pub fn find_cmds_by_name(&self, name: &str) -> anyhow::Result<Vec<Command>> {
+    pub fn get_by_name(&self, name: &str) -> anyhow::Result<Option<Command>> {
         let mut command_stmt = self.c.prepare("SELECT * FROM command WHERE name = ?1")?;
         let mut rows = command_stmt.query([name])?;
-        self.assemble(&mut rows)
+        Ok(self.assemble(&mut rows)?.pop())
     }
 
-    pub fn find_cmd(&self, name: &str, dir: &PathBuf) -> anyhow::Result<Option<Command>> {
-        let mut command_stmt = self
-            .c
-            .prepare("SELECT * FROM command WHERE name = ?1 AND dir = ?2")?;
-        let mut rows = command_stmt.query((name, dir.to_str().unwrap_or_default()))?;
+    pub fn delete_by_name(&self, name: &str) -> anyhow::Result<bool> {
+        let mut delete_cmd_stmt = self.c.prepare("DELETE FROM command WHERE name = ?1")?;
+        let rows = delete_cmd_stmt.execute([name])?;
 
-        let mut ret = self.assemble(&mut rows)?;
-        if ret.is_empty() {
-            Ok(None)
+        if rows != 0 {
+            Ok(true)
         } else {
-            Ok(Some(ret.swap_remove(0)))
+            Ok(false)
         }
     }
 

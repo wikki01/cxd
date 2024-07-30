@@ -13,6 +13,7 @@ pub fn print_short_help() {
 pub fn print_op_help(op: Op) {
     use defines::*;
     let (usage, help) = match op {
+        Op::Exec(_) => ("<NAME>", "  Executes a saved command\n"),
         Op::Add(_, _, _) => (ADD_LONG_USAGE, ADD_LONG_HELP),
         Op::Remove(_) => (REMOVE_LONG_USAGE, REMOVE_LONG_HELP),
         Op::List => (LIST_LONG_USAGE, LIST_LONG_HELP),
@@ -31,6 +32,7 @@ fn print_add_help() {
 
 #[derive(Debug, PartialEq)]
 pub enum Op {
+    Exec(Option<String>),
     Add(String, String, Vec<String>),
     Remove(String),
     List,
@@ -41,6 +43,7 @@ impl Display for Op {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use Op::*;
         let s = match self {
+            Exec(_) => "exec",
             Add(_, _, _) => "-a, --add",
             Remove(_) => "-r, --remove",
             List => "-l, --list",
@@ -92,8 +95,8 @@ pub fn parse_args() -> anyhow::Result<CxdArgs> {
     if let Some(i) = find_add_args() {
         // Add is greedy, so we need to protect pico_args
         trunc = Some(args.split_off(i + 1));
-        dbg!(&trunc);
     }
+    args.remove(0); // Remove $0
     let mut pargs = pico_args::Arguments::from_vec(args);
     let mut args = CxdArgs::default();
     // Parsing top level flags
@@ -170,5 +173,15 @@ pub fn parse_args() -> anyhow::Result<CxdArgs> {
 
     // Id (shared between remove and list)
     args.id = pargs.contains(["-i", "--id"]);
+
+    // Default to Exec if no op specified
+    if args.op.is_none() {
+        args.op.insert(Op::Exec(pargs.opt_free_from_str()?));
+    }
+
+    let remaining = pargs.finish();
+    if remaining.len() > 0 {
+        anyhow::bail!("Unrecognized arguments: {:?}", remaining);
+    }
     Ok(args)
 }
