@@ -1,111 +1,99 @@
-use std::{error::Error, path::PathBuf};
+use std::process::{exit, ExitCode, ExitStatus};
 
-use clap::{Parser, Subcommand};
+mod defines;
 
-#[derive(Parser)]
-pub struct Cli {
-    /// Set the path to the store database file
-    ///
-    /// Defaults to first of: $XDG_CACHE_HOME/cxd.cache, $HOME/.cache/cxd.cache
-    #[arg(long, short)]
-    pub file: Option<String>,
-
-    /// Subcommand
-    #[command(subcommand)]
-    pub command: CliCommand,
+fn print_short_help() {
+    print!("{}", defines::SHORT_HELP);
 }
 
-#[derive(Subcommand)]
-#[command(after_long_help = r#"The default matching order for commands:
-   1. Command matches NAME and CWD
-   2. Command matches NAME and only one exists
-   3. Allow user to select from all commands matching NAME
-"#)]
-pub enum CliCommand {
-    /// Add a new command to the store.
-    ///
-    /// By default, sets the command's working directory to CWD.
-    Add {
-        /// Add as a global command without associating a specific working directory
-        #[arg(long, short)]
-        global: bool,
-
-        /// Add using DIR as reference point rather than CWD
-        #[arg(long, short, conflicts_with = "global")]
-        dir: Option<PathBuf>,
-
-        /// Add an environment variable to the command. May be specified multiple times.
-        #[arg(long, short, value_parser = parse_key_value::<String, String>, number_of_values = 1, value_name = "KEY>=<VALUE")]
-        env: Vec<(String, String)>,
-
-        /// Name to associate with command
-        name: String,
-        /// Executable to run, can be bare name within $PATH, or absolute path
-        command: String,
-        /// Args of command
-        #[arg(allow_hyphen_values = true, trailing_var_arg = true)]
-        args: Vec<String>,
-    },
-    /// Remove a command from the store
-    Remove {
-        /// Search only global commands
-        #[arg(long, short)]
-        global: bool,
-
-        /// Search only commands with the CWD registered as their working directory
-        #[arg(long, short, conflicts_with = "global")]
-        cwd: bool,
-
-        /// Search only commands with DIR registered as their working directory
-        #[arg(long, short, conflicts_with = "global", conflicts_with = "cwd")]
-        dir: Option<PathBuf>,
-
-        /// Remove a command by a specific internal ID.
-        #[arg(long, short, conflicts_with_all = ["dir", "cwd", "global", "name"])]
-        id: Option<i64>,
-
-        /// Name of command to remove. Required unless -i/--id specified
-        #[arg(required_unless_present = "id")]
-        name: Option<String>,
-    },
-    /// Execute a command in the store
-    Exec {
-        /// Search only global commands
-        #[arg(long, short)]
-        global: bool,
-
-        /// Search only commands with the CWD registered as their working directory
-        #[arg(long, short, conflicts_with = "global")]
-        cwd: bool,
-
-        /// Search only commands with DIR registered as their working directory
-        #[arg(long, short, conflicts_with = "global", conflicts_with = "cwd")]
-        dir: Option<PathBuf>,
-
-        /// Name of command to execute
-        name: String,
-    },
-    /// List available commands
-    List {
-        /// Show the internal IDs of each command
-        #[arg(long, short)]
-        id: bool,
-    },
-    /// Clear all commands from store
-    Clear,
+fn print_long_help() {
+    print!("{}", defines::LONG_HELP);
 }
 
-/// Parse a single key-value pair
-/// "Borrowed" from https://github.com/clap-rs/clap/blob/master/examples/typed-derive.rs
-fn parse_key_value<T, U>(s: &str) -> Result<(T, U), Box<dyn Error + Send + Sync>>
-where
-    T: std::str::FromStr,
-    T::Err: Error + Send + Sync + 'static,
-    U: std::str::FromStr,
-    U::Err: Error + Send + Sync + 'static,
-{
-    let pos = s
-        .find('=')
-        .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{s}`"))?;
-    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
+fn print_long_help_add() {
+    eprintln!(
+        "Usage: {}\n{}",
+        defines::ADD_LONG_USAGE,
+        defines::ADD_LONG_HELP
+    );
+}
+
+#[derive(Debug)]
+pub enum Ops {
+    Add(Add),
+    Remove,
+}
+
+#[derive(Debug)]
+pub struct Add {
+    pub name: String,
+    pub cmd: String,
+    pub args: Vec<String>,
+}
+
+pub fn try_parse_add() -> anyhow::Result<Option<(Add, usize)>> {
+    let mut raw_args = std::env::args();
+    if let Some(i) = raw_args.position(|a| a == "-a" || a == "--add") {
+        // Add is greedy, and pico-args doesn't like that much
+        dbg!(&raw_args);
+        let mut iter = raw_args.into_iter();
+        // Ignore until we get a -- or arg without -
+        let mut name = None;
+        for item in &mut iter {
+            if item == "--" {
+                name = iter.next().map(|i| i.to_owned());
+                break;
+            } else if !item.starts_with("-") {
+                name = Some(item.to_owned());
+                break;
+            } else if item == "-h" || item == "--help" {
+                print_long_help_add();
+                anyhow::bail!(""); // TODO: We should catch this and exit successfully
+            }
+        }
+        if let None = name {
+            print_long_help_add();
+            anyhow::bail!("Missing argument: <NAME>");
+        }
+        let name = name.unwrap();
+        let cmd;
+        if let Some(s) = iter.next() {
+            cmd = s.to_owned();
+        } else {
+            print_long_help_add();
+            anyhow::bail!("Missing argument: <CMD>");
+        }
+        let args: Vec<_> = iter.map(|i| i.to_owned()).collect();
+        Ok(Some((Add { name, cmd, args }, i)))
+    } else {
+        Ok(None)
+    }
+}
+
+pub fn parse_args() -> anyhow::Result<Option<()>> {
+    let mut operation = None;
+    let mut args: Vec<_> = std::env::args_os().collect();
+
+    if let Some((add, i)) = try_parse_add()? {
+        operation = Some(Ops::Add(add));
+        args.truncate(i + 1);
+    }
+
+    let mut pargs = pico_args::Arguments::from_vec(args);
+
+    if pargs.contains("-a") || pargs.contains("--add") {}
+
+    if pargs.contains("-h") {
+        print_short_help();
+        return Ok(None);
+    }
+
+    if pargs.contains("--help") {
+        print_long_help();
+        return Ok(None);
+    }
+
+    dbg!(operation);
+
+    Ok(Some(()))
 }

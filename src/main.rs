@@ -11,13 +11,11 @@ mod command_store;
 use command_store::CommandStore;
 
 mod cli;
-use clap::Parser;
-use cli::{Cli, CliCommand};
 
 fn main() -> anyhow::Result<()> {
-    let cli_args = Cli::parse();
+    cli::parse_args()?;
 
-    let cache_file = cli_args
+    /*let cache_file = cli_args
         .file
         .and_then(|s| Some(PathBuf::from(s)))
         .or(std::env::var("XDG_CACHE_HOME").ok().and_then(|p| {
@@ -166,7 +164,7 @@ fn main() -> anyhow::Result<()> {
                 std::fs::remove_file(cache_file)?;
             }
         }
-    }
+    }*/
 
     Ok(())
 }

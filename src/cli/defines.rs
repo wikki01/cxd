@@ -1,0 +1,91 @@
+#![cfg_attr(rustfmt, rustfmt_skip)]
+
+use const_format::{concatcp, str_replace};
+
+pub const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
+
+pub const USAGE: &str = "cxd [OPTIONS] <NAME>|<OPERATION>";
+
+const HELP_ARG_DESC: &str = "Show this help message";
+
+const ADD_DESC: &str = "Add a new command to the database";
+pub const ADD_LONG_USAGE: &str = "-a, --add [OPTIONS] <NAME> <CMD> [ARG]...";
+pub const ADD_LONG_HELP: &str = concatcp!(ADD_DESC, r#"
+
+Arguments:
+  <NAME>             Name of command to add, must be unique to database
+  <CMD>              Executable to run, may be bare name within $PATH, or absolute path.
+  [ARG]              One or more arguments to CMD
+
+Add Options:
+  -c, --cwd          Save CWD as command's working directory
+  -d, --dir DIR      Save DIR as command's working directory
+  -e, --env ENV=VAL  Save an env variable to the command's environment
+  -h, --help         "#, HELP_ARG_DESC, r#"
+"#);
+
+const REMOVE_DESC: &str = "Remove a command from the database";
+pub const REMOVE_LONG_USAGE: &str = "-r, --remove [OPTIONS] <COMMAND>";
+pub const REMOVE_LONG_HELP: &str = concatcp!(REMOVE_DESC, r#"
+
+Arguments:
+  <COMMAND>          Selector for command, by default this is the command name
+
+Remove Options:
+  -i, --id ID        Interpret SELECTOR as the command's internal ID
+  -h, --help         "#, HELP_ARG_DESC, r#"
+"#);
+
+pub const LIST_DESC: &str = "List available commands";
+const LIST_LONG_USAGE: &str = "-l, --list [OPTIONS]";
+const LIST_LONG_HELP: &str = concatcp!(LIST_DESC, r#"
+
+List Options:
+  -l, --list         Show internal IDs of commands
+  -h, --help         "#, HELP_ARG_DESC, r#"
+"#);
+
+const CLEAR_LONG_USAGE: &str = "-c, --clear";
+pub const CLEAR_DESC: &str = "Clear all commands from the database";
+pub const CLEAR_LONG_HELP: &str = CLEAR_DESC; // Nothing more to add
+
+pub const LONG_HELP: &str = concatcp!(
+r#"Usage: "#, USAGE, r#"
+
+Arguments:
+  <NAME>   Name of command to execute
+
+Operations:
+  "#, ADD_LONG_USAGE, r#"
+      "#, str_replace!(ADD_LONG_HELP, "\n", "\n      "), r#"
+
+  "#, REMOVE_LONG_USAGE, r#"
+      "#, str_replace!(REMOVE_LONG_HELP, "\n", "\n      "), r#"
+
+  "#, LIST_LONG_USAGE, r#"
+      "#, str_replace!(LIST_LONG_HELP, "\n", "\n      "), r#"
+
+  "#, CLEAR_LONG_USAGE, r#"
+      "#, str_replace!(CLEAR_LONG_HELP, "\n", "\n      "), r#"
+
+  -h 
+      Show the short version of this help message
+
+  --help         
+      "#, HELP_ARG_DESC, r#"
+"#);
+
+pub const SHORT_HELP: &str = concatcp!(
+r#"Usage: "#, USAGE, r#"
+
+Arguments:
+  <NAME>   Name of command to execute
+
+Operations:
+  -a, --add <NAME> <CMD> [ARG]...  "#, ADD_DESC, r#"
+  -r, --remove <COMMAND>           "#, REMOVE_DESC, r#"
+  -l, --list                       "#, LIST_DESC, r#"
+  -c, --clear                      "#, CLEAR_DESC, r#"
+  -h                               "#, HELP_ARG_DESC, r#"
+  --help                           Show the long version of this help message
+"#);
