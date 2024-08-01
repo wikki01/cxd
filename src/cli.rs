@@ -13,18 +13,18 @@ pub fn print_short_help() {
 pub fn print_op_help(op: Op) {
     use defines::*;
     let (usage, help) = match op {
-        Op::Exec(_) => ("<NAME>", "  Executes a saved command\n"),
-        Op::Add(_, _, _) => (ADD_LONG_USAGE, ADD_LONG_HELP),
-        Op::Remove(_) => (REMOVE_LONG_USAGE, REMOVE_LONG_HELP),
+        Op::Exec => ("<NAME>", "  Executes a saved command\n"),
+        Op::Add => (ADD_LONG_USAGE, ADD_LONG_HELP),
+        Op::Remove => (REMOVE_LONG_USAGE, REMOVE_LONG_HELP),
         Op::List => (LIST_LONG_USAGE, LIST_LONG_HELP),
         Op::Clear => (CLEAR_LONG_USAGE, CLEAR_LONG_HELP),
     };
-    print!("Usage: {}\n{}", usage, help);
+    print!("Usage: cxd {}\n{}", usage, help);
 }
 
 fn print_add_help() {
     print!(
-        "Usage: {}\n{}",
+        "Usage: cxd {}\n{}",
         defines::ADD_LONG_USAGE,
         defines::ADD_LONG_HELP
     );
@@ -32,9 +32,9 @@ fn print_add_help() {
 
 #[derive(Debug, PartialEq)]
 pub enum Op {
-    Exec(Option<String>),
-    Add(String, String, Vec<String>),
-    Remove(String),
+    Exec,
+    Add,
+    Remove,
     List,
     Clear,
 }
@@ -43,11 +43,11 @@ impl Display for Op {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use Op::*;
         let s = match self {
-            Exec(_) => "exec",
-            Add(_, _, _) => "-a, --add",
-            Remove(_) => "-r, --remove",
-            List => "-l, --list",
-            Clear => "-c, --clear",
+            Exec => "exec",
+            Add => "-a|--add",
+            Remove => "-r|--remove",
+            List => "-l|--list",
+            Clear => "-c|--clear",
         };
         write!(f, "{}", s)
     }
@@ -63,6 +63,7 @@ pub enum HelpType {
 pub struct CxdArgs {
     pub file: Option<String>,
     pub op: Option<Op>,
+    pub op_args: Vec<String>,
     pub cwd: bool,
     pub dir: Option<String>,
     pub id: bool,
@@ -111,17 +112,13 @@ pub fn parse_args() -> anyhow::Result<CxdArgs> {
     }
     // Parsing operation
     if pargs.contains(["-a", "--add"]) {
-        args.op = Some(Op::Add(String::new(), String::new(), vec![]));
+        args.op = Some(Op::Add);
     }
-    if let Some(cmd) = pargs.opt_value_from_str(["-r", "--remove"])? {
-        let old = args.op.replace(Op::Remove(cmd));
+    if pargs.contains(["-r", "--remove"]) {
+        let old = args.op.replace(Op::Remove);
         if let Some(old) = old {
             print_short_help();
-            anyhow::bail!(
-                "Operation {} and {} are incompatible",
-                Op::Remove(String::new()),
-                old
-            );
+            anyhow::bail!("Operation {} and {} are incompatible", Op::Remove, old);
         }
     }
     if pargs.contains(["-l", "--list"]) {
@@ -142,7 +139,7 @@ pub fn parse_args() -> anyhow::Result<CxdArgs> {
     // Add-specific flags
     args.cwd = pargs.contains(["-c", "--cwd"]);
     if let Some(path) = pargs.opt_value_from_str(["-d", "--dir"])? {
-        if let Some(Op::Add(_, _, _)) = args.op {
+        if let Some(Op::Add) = args.op {
             print_add_help();
             anyhow::bail!("Option -d, --dir requires operation -a, --add");
         } else if args.cwd {
@@ -151,23 +148,10 @@ pub fn parse_args() -> anyhow::Result<CxdArgs> {
         }
         args.dir = Some(path);
     }
-    if let Some(Op::Add(name, cmd, cmd_args)) = &mut args.op {
-        let trunc = trunc.unwrap_or_default();
-        if trunc.len() < 2 {
-            print_add_help();
-            anyhow::bail!(
-                "Expected 2 arguments <NAME> and <CMD>, found {}",
-                trunc.len()
-            );
-        }
-        let trunc = trunc
-            .into_iter()
-            .map(|s| s.to_string_lossy().to_string())
-            .collect::<Vec<_>>();
-        *name = trunc[0].clone();
-        *cmd = trunc[1].clone();
-        for arg in &trunc[2..] {
-            cmd_args.push(arg.clone());
+    if let Some(Op::Add) = &mut args.op {
+        // Adding 'add' flags
+        for arg in trunc.unwrap_or_default() {
+            args.op_args.push(arg.to_string_lossy().into());
         }
     }
 
@@ -176,12 +160,11 @@ pub fn parse_args() -> anyhow::Result<CxdArgs> {
 
     // Default to Exec if no op specified
     if args.op.is_none() {
-        args.op.insert(Op::Exec(pargs.opt_free_from_str()?));
+        args.op.insert(Op::Exec);
     }
 
-    let remaining = pargs.finish();
-    if remaining.len() > 0 {
-        anyhow::bail!("Unrecognized arguments: {:?}", remaining);
+    for arg in pargs.finish() {
+        args.op_args.push(arg.to_string_lossy().into());
     }
     Ok(args)
 }

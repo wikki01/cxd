@@ -17,11 +17,11 @@ use cli::{print_long_help, print_op_help, print_short_help, HelpType};
 use crate::cli::Op;
 
 fn main() -> anyhow::Result<()> {
-    let cli_args = cli::parse_args()?;
+    let mut cli_args = cli::parse_args()?;
     match cli_args.help {
         Some(HelpType::Long) => {
             match cli_args.op {
-                Some(Op::Exec(_)) => print_long_help(),
+                Some(Op::Exec) => print_long_help(),
                 Some(op) => print_op_help(op),
                 None => print_long_help(),
             }
@@ -57,7 +57,16 @@ fn main() -> anyhow::Result<()> {
     let c = CommandStore::new(&cache_file)?;
 
     match cli_args.op.unwrap() {
-        Op::Add(name, command, args) => {
+        Op::Add => {
+            if cli_args.op_args.len() < 2 {
+                anyhow::bail!(
+                    "Not enough arguments for add. Expected 2 or more, found {}",
+                    cli_args.op_args.len()
+                );
+            }
+            let name = cli_args.op_args[0].to_owned();
+            let command = cli_args.op_args[1].to_owned();
+            let mut args = cli_args.op_args.split_off(2);
             let mut dir = PathBuf::new();
             if cli_args.cwd {
                 dir = std::env::current_dir()?;
@@ -80,7 +89,14 @@ fn main() -> anyhow::Result<()> {
                 ))?
             }
         }
-        Op::Remove(cmd) => {
+        Op::Remove => {
+            if cli_args.op_args.len() != 1 {
+                anyhow::bail!(
+                    "Wrong number of arguments for remove. Expected 1, found {}",
+                    cli_args.op_args.len()
+                );
+            }
+            let cmd = &cli_args.op_args[1];
             let res;
             if cli_args.id {
                 res = c.delete_by_id(cmd.parse().context("ID is not a number")?)?;
@@ -93,13 +109,15 @@ fn main() -> anyhow::Result<()> {
                 println!("No matching command found, nothing was deleted");
             }
         }
-        Op::Exec(cmd_name) => {
-            if let None = cmd_name {
-                print_short_help();
-                anyhow::bail!("Missing argument <NAME>");
+        Op::Exec => {
+            if cli_args.op_args.len() != 1 {
+                anyhow::bail!(
+                    "Wrong number of arguments. Expected 1, found {}",
+                    cli_args.op_args.len()
+                );
             }
-            let cmd_name = cmd_name.unwrap();
-            let cmd = c.get_by_name(&cmd_name)?;
+            let cmd_name = &cli_args.op_args[0];
+            let cmd = c.get_by_name(cmd_name)?;
             match cmd {
                 Some(c) => c.exec()?,
                 None => anyhow::bail!("No command found: {}", cmd_name),

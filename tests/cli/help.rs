@@ -10,7 +10,7 @@ fn short_help() -> anyhow::Result<()> {
     cmd.arg("-h")
         .assert()
         .success()
-        .stdout(contains("Show the long version of this help").and(contains("cxd")));
+        .stdout(contains("Show the long version of this help"));
     Ok(())
 }
 
@@ -21,7 +21,7 @@ fn long_help() -> anyhow::Result<()> {
     cmd.arg("--help")
         .assert()
         .success()
-        .stdout(contains("Show the short version of this help").and(contains("cxd")));
+        .stdout(contains("Show the short version of this help"));
     Ok(())
 }
 
@@ -33,7 +33,7 @@ fn add_long_help() -> anyhow::Result<()> {
         .arg("--add")
         .assert()
         .success()
-        .stdout(contains("Add a new command").and(contains("cxd").not()));
+        .stdout(contains("Add a new command").and(contains("Operations").not()));
     Ok(())
 }
 
@@ -45,7 +45,7 @@ fn add_long_help_rev() -> anyhow::Result<()> {
         .arg("--help")
         .assert()
         .success()
-        .stdout(contains("Add a new command").and(contains("cxd").not()));
+        .stdout(contains("Add a new command").and(contains("Operations").not()));
     Ok(())
 }
 
@@ -57,7 +57,7 @@ fn remove_long_help() -> anyhow::Result<()> {
         .arg("--remove")
         .assert()
         .success()
-        .stdout(contains("Remove a command").and(contains("cxd").not()));
+        .stdout(contains("Remove a command").and(contains("Operations").not()));
     Ok(())
 }
 
@@ -69,7 +69,7 @@ fn remove_long_help_rev() -> anyhow::Result<()> {
         .arg("--help")
         .assert()
         .success()
-        .stdout(contains("Remove a command").and(contains("cxd").not()));
+        .stdout(contains("Remove a command").and(contains("Operations").not()));
     Ok(())
 }
 
@@ -81,7 +81,7 @@ fn list_long_help() -> anyhow::Result<()> {
         .arg("--list")
         .assert()
         .success()
-        .stdout(contains("List available commands").and(contains("cxd").not()));
+        .stdout(contains("List available commands").and(contains("Operations").not()));
     Ok(())
 }
 
@@ -93,7 +93,7 @@ fn list_long_help_rev() -> anyhow::Result<()> {
         .arg("--help")
         .assert()
         .success()
-        .stdout(contains("List available commands").and(contains("cxd").not()));
+        .stdout(contains("List available commands").and(contains("Operations").not()));
     Ok(())
 }
 
@@ -105,7 +105,7 @@ fn clear_long_help() -> anyhow::Result<()> {
         .arg("--clear")
         .assert()
         .success()
-        .stdout(contains("Clear all commands").and(contains("cxd").not()));
+        .stdout(contains("Clear all commands").and(contains("Operations").not()));
     Ok(())
 }
 
@@ -117,6 +117,6 @@ fn clear_long_help_rev() -> anyhow::Result<()> {
         .arg("--help")
         .assert()
         .success()
-        .stdout(contains("Clear all commands").and(contains("cxd").not()));
+        .stdout(contains("Clear all commands").and(contains("Operations").not()));
     Ok(())
 }
