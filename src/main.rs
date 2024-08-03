@@ -1,3 +1,4 @@
+#![allow(unused)]
 use anyhow::Context;
 use std::{
     io::{BufRead, Write},
@@ -11,123 +12,121 @@ mod command_store;
 use command_store::CommandStore;
 
 mod cli;
-use clap::Parser;
-use cli::{Cli, CliCommand};
+use cli::{print_long_help, print_op_help, print_short_help, HelpType};
+
+use crate::cli::Op;
 
 fn main() -> anyhow::Result<()> {
-    let cli_args = Cli::parse();
+    let mut cli_args = cli::parse_args()?;
+    match cli_args.help {
+        Some(HelpType::Long) => {
+            match cli_args.op {
+                Some(Op::Exec) => print_long_help(),
+                Some(op) => print_op_help(op),
+                None => print_long_help(),
+            }
+            return Ok(());
+        }
+        Some(HelpType::Short) => {
+            print_short_help();
+            return Ok(());
+        }
+        _ => {}
+    }
 
     let cache_file = cli_args
         .file
         .and_then(|s| Some(PathBuf::from(s)))
-        .or(std::env::var("XDG_CACHE_HOME").ok().and_then(|p| {
-            if p.len() == 0 {
-                None
-            } else {
-                Some(PathBuf::from(p))
-            }
-        }))
+        .or(std::env::var("CXD_CACHE_DIR")
+            .or(std::env::var("XDG_CACHE_HOME"))
+            .ok()
+            .and_then(|p| {
+                if p.len() == 0 {
+                    None
+                } else {
+                    Some(PathBuf::from(p).join("cxd.cache"))
+                }
+            }))
         .or(std::env::var("HOME").ok().and_then(|p| {
             if p.len() == 0 {
                 None
             } else {
-                Some(PathBuf::from(p).join(".cache"))
+                Some(PathBuf::from(p).join(".cache").join("cxd.cache"))
             }
         }))
-        .and_then(|p| Some(p.join("cxd.cache")))
         .context("No suitable path found for cache file")?;
 
     let c = CommandStore::new(&cache_file)?;
 
-    let get_dir = |dir: &Option<PathBuf>, global: bool| -> anyhow::Result<PathBuf> {
-        Ok(if global {
-            PathBuf::new()
-        } else if let Some(d) = dir {
-            d.into()
-        } else {
-            std::env::current_dir()?
-        })
-    };
-
-    let best_cmd =
-        |name: &str, dir: &PathBuf, strict_match: bool| -> anyhow::Result<Option<Command>> {
-            let best_cmd = c.find_cmd(&name, &dir)?;
-            if strict_match {
-                // Only look for specific command
-                return Ok(best_cmd);
+    match cli_args.op.unwrap() {
+        Op::Add => {
+            if cli_args.op_args.len() < 2 {
+                anyhow::bail!(
+                    "Not enough arguments for add. Expected 2 or more, found {}",
+                    cli_args.op_args.len()
+                );
             }
-            if best_cmd.is_some() {
-                // Have a best command, might as well use it
-                return Ok(best_cmd);
+            let name = cli_args.op_args[0].to_owned();
+            let command = cli_args.op_args[1].to_owned();
+            let mut args = cli_args.op_args.split_off(2);
+            let mut dir = PathBuf::new();
+            if cli_args.cwd {
+                dir = std::env::current_dir()?;
+            } else if let Some(d) = cli_args.dir {
+                dir = d.into();
             }
-            // Fall back to fetching all with name
-            let mut cmds = c.find_cmds_by_name(&name)?;
-            if cmds.len() == 0 {
-                Ok(None)
-            } else if cmds.len() == 1 {
-                // Only one, might as well use it
-                Ok(Some(cmds.pop().unwrap()))
-            } else {
-                // We have multiple matches, should ask user
-                todo!();
-            }
-        };
-
-    match cli_args.command {
-        CliCommand::Add {
-            global,
-            dir,
-            name,
-            command,
-            args,
-            env,
-        } => {
-            let d = get_dir(&dir, global)?;
-            if c.insert(Command {
+            let cmd = Command {
                 id: 0,
                 name: name.clone(),
                 command,
                 args,
-                envs: env,
-                dir: d,
-            })? {
-                println!("Created command: {name}");
+                envs: cli_args.env,
+                dir,
+            };
+            if c.insert(&cmd)? {
+                println!("Created {cmd}");
             } else {
                 Err(anyhow::anyhow!(
-                    "Failed to create command for {name}, already exists"
+                    "Failed to create command {name}: already exists"
                 ))?
             }
         }
-        CliCommand::Remove {
-            global,
-            dir,
-            cwd,
-            id,
-            name,
-        } => {
-            if let Some(id) = id {
-                c.delete_by_id(id)?;
+        Op::Remove => {
+            if cli_args.op_args.len() != 1 {
+                anyhow::bail!(
+                    "Wrong number of arguments for remove. Expected 1, found {}",
+                    cli_args.op_args.len()
+                );
+            }
+            let cmd = &cli_args.op_args[0];
+            let res;
+            if cli_args.id {
+                res = c.delete_by_id(cmd.parse().context("ID is not a number")?)?;
             } else {
-                let name = name.unwrap();
-                let d = get_dir(&dir, global)?;
-                let cmd = best_cmd(&name, &d, global || dir.is_some() || cwd)?
-                    .context(format!("No matches found for command {name}"))?;
-                c.delete_by_id(cmd.id)?;
+                res = c.delete_by_name(&cmd)?
+            }
+            if res {
+                println!("Deleted {}", cmd);
+            } else {
+                println!("No matching command found, nothing was deleted");
             }
         }
-        CliCommand::Exec {
-            global,
-            dir,
-            cwd,
-            name,
-        } => {
-            let d = get_dir(&dir, global)?;
-            let cmd = best_cmd(&name, &d, global || dir.is_some() || cwd)?
-                .context(format!("No matches found for command {name}"))?;
-            cmd.exec()?;
+        Op::Exec => {
+            if cli_args.op_args.len() != 1 {
+                anyhow::bail!(
+                    "Wrong number of arguments. Expected 1, found {}",
+                    cli_args.op_args.len()
+                );
+            }
+            let cmd_name = &cli_args.op_args[0];
+            let cmd = c.get_by_name(cmd_name)?;
+            match cmd {
+                Some(c) => c.exec()?,
+                None => anyhow::bail!("No command found: {}", cmd_name),
+            }
         }
-        CliCommand::List { id } => {
-            if id {
+        Op::List => {
+            if cli_args.id {
                 for cmd in c.fetch_all()? {
                     println!("{:+}", cmd);
                 }
@@ -137,7 +136,7 @@ fn main() -> anyhow::Result<()> {
                 }
             }
         }
-        CliCommand::Clear => {
+        Op::Clear => {
             print!("This will remove all saved commands from the store. Continue? [yn]: ");
             std::io::stdout().flush()?;
             let response = std::io::stdin()

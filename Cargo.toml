@@ -3,10 +3,14 @@ name = "cxd"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 anyhow = "1.0.81"
-clap = { version = "4.5.3", features = ["derive"] }
+const_format = "0.2.32"
 exec = "0.3.1"
+pico-args = "0.5.0"
 rusqlite = "0.31.0"
+
+[dev-dependencies]
+assert_cmd = "2.0.15"
+predicates = "3.1.2"
+uuid = { version = "1.10.0", features = ["v7"] }

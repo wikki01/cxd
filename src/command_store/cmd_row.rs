@@ -15,7 +15,7 @@ impl CmdRow {
                 command TEXT NOT NULL,
                 dir     TEXT NOT NULL,
                 UNIQUE(id)
-                UNIQUE(name, dir)
+                UNIQUE(name)
             )
         "#,
             (),

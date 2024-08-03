@@ -1,111 +1,197 @@
-use std::{error::Error, path::PathBuf};
+use std::fmt::Display;
 
-use clap::{Parser, Subcommand};
+mod defines;
 
-#[derive(Parser)]
-pub struct Cli {
-    /// Set the path to the store database file
-    ///
-    /// Defaults to first of: $XDG_CACHE_HOME/cxd.cache, $HOME/.cache/cxd.cache
-    #[arg(long, short)]
-    pub file: Option<String>,
-
-    /// Subcommand
-    #[command(subcommand)]
-    pub command: CliCommand,
+pub fn print_long_help() {
+    print!("{}", defines::LONG_HELP);
 }
 
-#[derive(Subcommand)]
-#[command(after_long_help = r#"The default matching order for commands:
-   1. Command matches NAME and CWD
-   2. Command matches NAME and only one exists
-   3. Allow user to select from all commands matching NAME
-"#)]
-pub enum CliCommand {
-    /// Add a new command to the store.
-    ///
-    /// By default, sets the command's working directory to CWD.
-    Add {
-        /// Add as a global command without associating a specific working directory
-        #[arg(long, short)]
-        global: bool,
+pub fn print_short_help() {
+    print!("{}", defines::SHORT_HELP);
+}
 
-        /// Add using DIR as reference point rather than CWD
-        #[arg(long, short, conflicts_with = "global")]
-        dir: Option<PathBuf>,
+pub fn print_op_help(op: Op) {
+    use defines::*;
+    let help = match op {
+        Op::Exec => "  Executes a saved command\n",
+        Op::Add => ADD_LONG_HELP,
+        Op::Remove => REMOVE_LONG_HELP,
+        Op::List => LIST_LONG_HELP,
+        Op::Clear => CLEAR_LONG_HELP,
+    };
+    print_op_usage(op);
+    print!("{}", help);
+}
 
-        /// Add an environment variable to the command. May be specified multiple times.
-        #[arg(long, short, value_parser = parse_key_value::<String, String>, number_of_values = 1, value_name = "KEY>=<VALUE")]
-        env: Vec<(String, String)>,
+pub fn print_op_usage(op: Op) {
+    use defines::*;
+    let usage = match op {
+        Op::Exec => "<NAME>",
+        Op::Add => ADD_LONG_USAGE,
+        Op::Remove => REMOVE_LONG_USAGE,
+        Op::List => LIST_LONG_USAGE,
+        Op::Clear => CLEAR_LONG_USAGE,
+    };
+    print!("Usage: cxd {}\n", usage);
+}
 
-        /// Name to associate with command
-        name: String,
-        /// Executable to run, can be bare name within $PATH, or absolute path
-        command: String,
-        /// Args of command
-        #[arg(allow_hyphen_values = true, trailing_var_arg = true)]
-        args: Vec<String>,
-    },
-    /// Remove a command from the store
-    Remove {
-        /// Search only global commands
-        #[arg(long, short)]
-        global: bool,
-
-        /// Search only commands with the CWD registered as their working directory
-        #[arg(long, short, conflicts_with = "global")]
-        cwd: bool,
-
-        /// Search only commands with DIR registered as their working directory
-        #[arg(long, short, conflicts_with = "global", conflicts_with = "cwd")]
-        dir: Option<PathBuf>,
-
-        /// Remove a command by a specific internal ID.
-        #[arg(long, short, conflicts_with_all = ["dir", "cwd", "global", "name"])]
-        id: Option<i64>,
-
-        /// Name of command to remove. Required unless -i/--id specified
-        #[arg(required_unless_present = "id")]
-        name: Option<String>,
-    },
-    /// Execute a command in the store
-    Exec {
-        /// Search only global commands
-        #[arg(long, short)]
-        global: bool,
-
-        /// Search only commands with the CWD registered as their working directory
-        #[arg(long, short, conflicts_with = "global")]
-        cwd: bool,
-
-        /// Search only commands with DIR registered as their working directory
-        #[arg(long, short, conflicts_with = "global", conflicts_with = "cwd")]
-        dir: Option<PathBuf>,
-
-        /// Name of command to execute
-        name: String,
-    },
-    /// List available commands
-    List {
-        /// Show the internal IDs of each command
-        #[arg(long, short)]
-        id: bool,
-    },
-    /// Clear all commands from store
+#[derive(Debug, PartialEq)]
+pub enum Op {
+    Exec,
+    Add,
+    Remove,
+    List,
     Clear,
 }
 
-/// Parse a single key-value pair
-/// "Borrowed" from https://github.com/clap-rs/clap/blob/master/examples/typed-derive.rs
-fn parse_key_value<T, U>(s: &str) -> Result<(T, U), Box<dyn Error + Send + Sync>>
-where
-    T: std::str::FromStr,
-    T::Err: Error + Send + Sync + 'static,
-    U: std::str::FromStr,
-    U::Err: Error + Send + Sync + 'static,
-{
-    let pos = s
-        .find('=')
-        .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{s}`"))?;
-    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
+impl Display for Op {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use Op::*;
+        let s = match self {
+            Exec => "exec",
+            Add => "-a|--add",
+            Remove => "-r|--remove",
+            List => "-l|--list",
+            Clear => "-c|--clear",
+        };
+        write!(f, "{}", s)
+    }
+}
+
+#[derive(Debug)]
+pub enum HelpType {
+    Short,
+    Long,
+}
+
+#[derive(Debug, Default)]
+pub struct CxdArgs {
+    pub file: Option<String>,
+    pub op: Option<Op>,
+    pub op_args: Vec<String>,
+    pub env: Vec<(String, String)>,
+    pub cwd: bool,
+    pub dir: Option<String>,
+    pub id: bool,
+    pub help: Option<HelpType>,
+}
+
+pub fn find_add_args() -> Option<usize> {
+    // Add is greedy, and pico-args doesn't like that much
+
+    let mut raw_args = std::env::args();
+    let mut last = false;
+    let mut skip_next = false;
+    raw_args
+        .position(|a| a == "-a" || a == "--add")
+        .and_then(|p| {
+            raw_args
+                .position(|a| {
+                    if last {
+                        true
+                    } else if skip_next {
+                        skip_next = false;
+                        false
+                    } else if a == "--env" || a == "-e" || a == "--dir" || a == "-d" {
+                        skip_next = true;
+                        false
+                    } else if a == "--" {
+                        last = true; // Need to move one forward
+                        false
+                    } else {
+                        !a.starts_with("-")
+                    }
+                })
+                .map(|a| a + p)
+        })
+}
+
+pub fn parse_args() -> anyhow::Result<CxdArgs> {
+    let mut raw_args: Vec<_> = std::env::args_os().collect();
+    let mut args = CxdArgs::default();
+    let mut trunc = None;
+    if let Some(i) = find_add_args() {
+        // Add is greedy, so we need to protect pico_args
+        trunc = Some(raw_args.split_off(i + 1));
+        args.op = Some(Op::Add);
+    }
+    raw_args.remove(0); // Remove $0
+    let mut pargs = pico_args::Arguments::from_vec(raw_args);
+    // Parsing top level flags
+    if pargs.contains("-h") {
+        args.help = Some(HelpType::Short);
+    }
+    if pargs.contains("--help") {
+        args.help = Some(HelpType::Long);
+    }
+    if let Some(path) = pargs.opt_value_from_str(["-f", "--file"])? {
+        args.file = Some(path);
+    }
+    // Parsing operation
+    if pargs.contains(["-a", "--add"]) {
+        args.op = Some(Op::Add);
+    }
+    if pargs.contains(["-r", "--remove"]) {
+        let old = args.op.replace(Op::Remove);
+        if let Some(old) = old {
+            print_short_help();
+            anyhow::bail!("Operation {} and {} are incompatible", Op::Remove, old);
+        }
+    }
+    if pargs.contains(["-l", "--list"]) {
+        let old = args.op.replace(Op::List);
+        if let Some(old) = old {
+            print_short_help();
+            anyhow::bail!("Operation {} and {} are incompatible", Op::List, old);
+        }
+    }
+    if pargs.contains("--clear") {
+        let old = args.op.replace(Op::Clear);
+        if let Some(old) = old {
+            print_short_help();
+            anyhow::bail!("Operation {} and {} are incompatible", Op::Clear, old);
+        }
+    }
+
+    // Add-specific flags
+    args.cwd = pargs.contains(["-c", "--cwd"]);
+    if let Some(path) = pargs.opt_value_from_str(["-d", "--dir"])? {
+        if args.cwd {
+            print_op_usage(Op::Add);
+            anyhow::bail!("Options -d, --dir and -c, --cwd are incompatible");
+        } else if args.op != Some(Op::Add) {
+            print_op_usage(Op::Add);
+            anyhow::bail!("Option -d, --dir requires operation -a, --add");
+        }
+        args.dir = Some(path);
+    }
+    while let Some(pair) = pargs.opt_value_from_str::<_, String>(["-e", "--env"])? {
+        if args.op != Some(Op::Add) {
+            print_op_usage(Op::Add);
+            anyhow::bail!("Option -e, --env requires operation -a, --add");
+        }
+        match pair.split_once('=') {
+            Some((k, v)) => args.env.push((k.to_owned(), v.to_owned())),
+            None => anyhow::bail!("Failed to parse <KEY>=<VAL> pair: {}", pair),
+        }
+    }
+    if let Some(Op::Add) = &mut args.op {
+        // Adding 'add' arguments since we chopped them off at the beginning
+        for arg in trunc.unwrap_or_default() {
+            args.op_args.push(arg.to_string_lossy().into());
+        }
+    }
+
+    // Id (shared between remove and list)
+    args.id = pargs.contains(["-i", "--id"]);
+
+    // Default to Exec if no op specified
+    if args.op.is_none() {
+        args.op.insert(Op::Exec);
+    }
+
+    for arg in pargs.finish() {
+        args.op_args.push(arg.to_string_lossy().into());
+    }
+    Ok(args)
 }

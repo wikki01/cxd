@@ -11,73 +11,85 @@ events overwriting my temporary Makefiles, I wrote `cxd`.
 ## Use
 `cxd` uses a `sqlite` database to save commands and their respective directories to execute
 at a later time. Database cache files can be saved and reused across devices. However,
-note that you should **NEVER** trust a cache file from an outside source, as `cxd exec`
+note that you should **NEVER** trust a cache file from an outside source, as `cxd`
 will execute arbitrary commands from the database.
-
-### Default Command Matching
-`cxd` attempts to find the best match for each input using the following hierarchy.
-
-1. Command matches `NAME` and is in `$CWD`
-1. Command matches `NAME` and is only match
-1. Let user select between all commands matching `NAME`
 
 ### Selecting Cache File
 By default, `cxd` will attempt to store the cache file in the following locations, and 
 fail if unable to construct any.
 
-1. Contents of `-f FILE`
+1. Contents of `-f FILE` or `--file FILE`
+1. `$CXD_CACHE_DIR/cxd.cache`
 1. `$XDG_CACHE_HOME/cxd.cache`
 1. `$HOME/.cache/cxd.cache`
 
-### Pushing
-First push a new command with `cxd push`.
+### Adding a Command
+To add a command to the database, use `cxd --add <NAME> <CMD> [ARG]...`. 
 
 ```sh
-cxd push hello -- echo hello world
+cxd --add hello echo Hi there!
 ```
 
-This will register a command named `hello` with its directory assigned to `$CWD`.
+This will register a command named `hello` that prints out a greeting.
 
-To register a "Global" command, which does not depend on a specific directory, use `-g`. 
-```sh
-cxd push -g weather -- curl https://wttr.in
-```
-
-### Executing
-To execute a command from the store, use `cxd exec`. 
+If you'd like the command to swap directories back to your current `$CWD` before invoking 
+the command, pass the `--cwd` flag.
 
 ```sh
-cxd exec hello
+cxd --add --cwd build cargo build
 ```
 
-To only execute specific commands registered globally, from the current directory, or
-from a specific directory, use the `-g`, `-c`, `-d DIR` flags respectively.
+Similarly, you can set a specific working directory with `--dir <DIR>`.
 
 ```sh
-cxd push build -- make build
-cxd exec -c build
+cxd --add --dir /src/cxd build cargo build
 ```
 
-### Popping
-To remove a command from the store, use `cxd pop`.
+If specific environment variables must be set, use `--env <KEY>=<VALUE>`.
 
 ```sh
-cxd pop hello
+cxd --add --env SOME_ENV=hi hello printenv SOME_ENV
 ```
 
-This has a similar matching scheme to `exec`. Use `-g`, `-c`, and `-d DIR` to control
-the matching of `pop`. Otherwise, it will use the default matching scheme.
+### Executing a command
+To execute a command from the database, use `cxd <CMD>`. 
+
+```sh
+cxd hello
+```
+
+### Removing a command
+To remove a command from the database, use `cxd --remove <CMD>`.
+
+```sh
+cxd --remove hello
+```
 
 ### Listing
-To list all commands in the store, use `cxd list`.
+To list all commands in the database, use `cxd --list`.
 
 ```sh
-cxd list
+cxd --list
 ```
 
 ### Clearing
-To clear all commands in the store, use `cxd clear`.
+To clear all commands in the database, use `cxd --clear`.
 
 ```sh
-cxd clear
+cxd --clear
 ```
+
+## Tips
+### Using multiple cache files
+It can be useful to segment cache files for specific commands. 
+A simple and ergonomic way to do this is to set aliases.
+
+For example, imagine you want two separate cache files, one for play and one for work.
+
+Then you can add the following to your `.bashrc`, `.zshrc`, or equivalent.
+```sh
+alias work="cxd -f .cache/cxd.work.cache"
+alias play="cxd -f .cache/cxd.play.cache"
+```
+
+This allows you to run `cxd` with each cache file as if it were two different commands, `work` and `play`.
