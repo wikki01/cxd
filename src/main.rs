@@ -99,7 +99,7 @@ fn main() -> anyhow::Result<()> {
                     cli_args.op_args.len()
                 );
             }
-            let cmd = &cli_args.op_args[1];
+            let cmd = &cli_args.op_args[0];
             let res;
             if cli_args.id {
                 res = c.delete_by_id(cmd.parse().context("ID is not a number")?)?;

@@ -75,32 +75,43 @@ pub fn find_add_args() -> Option<usize> {
     // Add is greedy, and pico-args doesn't like that much
 
     let mut raw_args = std::env::args();
-    let mut requires_adjust = false;
+    let mut last = false;
+    let mut skip_next = false;
     raw_args
         .position(|a| a == "-a" || a == "--add")
         .and_then(|p| {
             raw_args
                 .position(|a| {
-                    if a == "--" {
-                        requires_adjust = true; // Need to move one forward
-                        return false;
+                    if last {
+                        true
+                    } else if skip_next {
+                        skip_next = false;
+                        false
+                    } else if a == "--env" || a == "-e" || a == "--dir" || a == "-d" {
+                        skip_next = true;
+                        false
+                    } else if a == "--" {
+                        last = true; // Need to move one forward
+                        false
+                    } else {
+                        !a.starts_with("-")
                     }
-                    !a.starts_with("-") || requires_adjust
                 })
                 .map(|a| a + p)
         })
 }
 
 pub fn parse_args() -> anyhow::Result<CxdArgs> {
-    let mut args: Vec<_> = std::env::args_os().collect();
+    let mut raw_args: Vec<_> = std::env::args_os().collect();
+    let mut args = CxdArgs::default();
     let mut trunc = None;
     if let Some(i) = find_add_args() {
         // Add is greedy, so we need to protect pico_args
-        trunc = Some(args.split_off(i + 1));
+        trunc = Some(raw_args.split_off(i + 1));
+        args.op = Some(Op::Add);
     }
-    args.remove(0); // Remove $0
-    let mut pargs = pico_args::Arguments::from_vec(args);
-    let mut args = CxdArgs::default();
+    raw_args.remove(0); // Remove $0
+    let mut pargs = pico_args::Arguments::from_vec(raw_args);
     // Parsing top level flags
     if pargs.contains("-h") {
         args.help = Some(HelpType::Short);
@@ -140,16 +151,20 @@ pub fn parse_args() -> anyhow::Result<CxdArgs> {
     // Add-specific flags
     args.cwd = pargs.contains(["-c", "--cwd"]);
     if let Some(path) = pargs.opt_value_from_str(["-d", "--dir"])? {
-        if let Some(Op::Add) = args.op {
-            print_add_help();
-            anyhow::bail!("Option -d, --dir requires operation -a, --add");
-        } else if args.cwd {
+        if args.cwd {
             print_add_help();
             anyhow::bail!("Options -d, --dir and -c, --cwd are incompatible");
+        } else if args.op != Some(Op::Add) {
+            print_add_help();
+            anyhow::bail!("Option -d, --dir requires operation -a, --add");
         }
         args.dir = Some(path);
     }
     while let Some(pair) = pargs.opt_value_from_str::<_, String>(["-e", "--env"])? {
+        if args.op != Some(Op::Add) {
+            print_add_help();
+            anyhow::bail!("Option -e, --env requires operation -a, --add");
+        }
         match pair.split_once('=') {
             Some((k, v)) => args.env.push((k.to_owned(), v.to_owned())),
             None => anyhow::bail!("Failed to parse <KEY>=<VAL> pair: {}", pair),
