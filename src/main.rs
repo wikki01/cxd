@@ -44,17 +44,16 @@ fn main() -> anyhow::Result<()> {
                 if p.len() == 0 {
                     None
                 } else {
-                    Some(PathBuf::from(p))
+                    Some(PathBuf::from(p).join("cxd.cache"))
                 }
             }))
         .or(std::env::var("HOME").ok().and_then(|p| {
             if p.len() == 0 {
                 None
             } else {
-                Some(PathBuf::from(p).join(".cache"))
+                Some(PathBuf::from(p).join(".cache").join("cxd.cache"))
             }
         }))
-        .and_then(|p| Some(p.join("cxd.cache")))
         .context("No suitable path found for cache file")?;
 
     let c = CommandStore::new(&cache_file)?;
