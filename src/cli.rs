@@ -12,22 +12,27 @@ pub fn print_short_help() {
 
 pub fn print_op_help(op: Op) {
     use defines::*;
-    let (usage, help) = match op {
-        Op::Exec => ("<NAME>", "  Executes a saved command\n"),
-        Op::Add => (ADD_LONG_USAGE, ADD_LONG_HELP),
-        Op::Remove => (REMOVE_LONG_USAGE, REMOVE_LONG_HELP),
-        Op::List => (LIST_LONG_USAGE, LIST_LONG_HELP),
-        Op::Clear => (CLEAR_LONG_USAGE, CLEAR_LONG_HELP),
+    let help = match op {
+        Op::Exec => "  Executes a saved command\n",
+        Op::Add => ADD_LONG_HELP,
+        Op::Remove => REMOVE_LONG_HELP,
+        Op::List => LIST_LONG_HELP,
+        Op::Clear => CLEAR_LONG_HELP,
     };
-    print!("Usage: cxd {}\n{}", usage, help);
+    print_op_usage(op);
+    print!("{}", help);
 }
 
-fn print_add_help() {
-    print!(
-        "Usage: cxd {}\n{}",
-        defines::ADD_LONG_USAGE,
-        defines::ADD_LONG_HELP
-    );
+pub fn print_op_usage(op: Op) {
+    use defines::*;
+    let usage = match op {
+        Op::Exec => "<NAME>",
+        Op::Add => ADD_LONG_USAGE,
+        Op::Remove => REMOVE_LONG_USAGE,
+        Op::List => LIST_LONG_USAGE,
+        Op::Clear => CLEAR_LONG_USAGE,
+    };
+    print!("Usage: cxd {}\n", usage);
 }
 
 #[derive(Debug, PartialEq)]
@@ -152,17 +157,17 @@ pub fn parse_args() -> anyhow::Result<CxdArgs> {
     args.cwd = pargs.contains(["-c", "--cwd"]);
     if let Some(path) = pargs.opt_value_from_str(["-d", "--dir"])? {
         if args.cwd {
-            print_add_help();
+            print_op_usage(Op::Add);
             anyhow::bail!("Options -d, --dir and -c, --cwd are incompatible");
         } else if args.op != Some(Op::Add) {
-            print_add_help();
+            print_op_usage(Op::Add);
             anyhow::bail!("Option -d, --dir requires operation -a, --add");
         }
         args.dir = Some(path);
     }
     while let Some(pair) = pargs.opt_value_from_str::<_, String>(["-e", "--env"])? {
         if args.op != Some(Op::Add) {
-            print_add_help();
+            print_op_usage(Op::Add);
             anyhow::bail!("Option -e, --env requires operation -a, --add");
         }
         match pair.split_once('=') {
