@@ -78,7 +78,7 @@ fn main() -> anyhow::Result<()> {
                 name: name.clone(),
                 command,
                 args,
-                envs: vec![], // TODO: env,
+                envs: cli_args.env,
                 dir,
             };
             if c.insert(&cmd)? {

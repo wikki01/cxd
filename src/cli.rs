@@ -64,6 +64,7 @@ pub struct CxdArgs {
     pub file: Option<String>,
     pub op: Option<Op>,
     pub op_args: Vec<String>,
+    pub env: Vec<(String, String)>,
     pub cwd: bool,
     pub dir: Option<String>,
     pub id: bool,
@@ -148,8 +149,14 @@ pub fn parse_args() -> anyhow::Result<CxdArgs> {
         }
         args.dir = Some(path);
     }
+    while let Some(pair) = pargs.opt_value_from_str::<_, String>(["-e", "--env"])? {
+        match pair.split_once('=') {
+            Some((k, v)) => args.env.push((k.to_owned(), v.to_owned())),
+            None => anyhow::bail!("Failed to parse <KEY>=<VAL> pair: {}", pair),
+        }
+    }
     if let Some(Op::Add) = &mut args.op {
-        // Adding 'add' flags
+        // Adding 'add' arguments since we chopped them off at the beginning
         for arg in trunc.unwrap_or_default() {
             args.op_args.push(arg.to_string_lossy().into());
         }
