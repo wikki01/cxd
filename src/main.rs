@@ -37,13 +37,16 @@ fn main() -> anyhow::Result<()> {
     let cache_file = cli_args
         .file
         .and_then(|s| Some(PathBuf::from(s)))
-        .or(std::env::var("XDG_CACHE_HOME").ok().and_then(|p| {
-            if p.len() == 0 {
-                None
-            } else {
-                Some(PathBuf::from(p))
-            }
-        }))
+        .or(std::env::var("CXD_CACHE_DIR")
+            .or(std::env::var("XDG_CACHE_HOME"))
+            .ok()
+            .and_then(|p| {
+                if p.len() == 0 {
+                    None
+                } else {
+                    Some(PathBuf::from(p))
+                }
+            }))
         .or(std::env::var("HOME").ok().and_then(|p| {
             if p.len() == 0 {
                 None

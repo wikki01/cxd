@@ -12,7 +12,7 @@ const FILE_DESC: &str = "File to use as the backing command cache";
 const FILE_LONG_USAGE: &str = "-f, --file";
 const FILE_LONG_HELP: &str = concatcp!(FILE_DESC, r#"
 
-Defaults to first of: $XDG_CACHE_HOME/cxd.cache, $HOME/.cache/cxd.cache
+Defaults to first of: $CXD_CACHE_DIR/cxd.cache, $XDG_CACHE_HOME/cxd.cache, $HOME/.cache/cxd.cache
 "#);
 
 const ADD_DESC: &str = "Add a new command to the database";
