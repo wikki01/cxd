@@ -3,6 +3,10 @@ name = "cxd"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+strip = true
+lto = true
+
 [dependencies]
 anyhow = "1.0.81"
 const_format = "0.2.32"
