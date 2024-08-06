@@ -13,7 +13,6 @@ pub fn print_short_help() {
 pub fn print_op_help(op: Op) {
     use defines::*;
     let help = match op {
-        Op::Exec => "  Executes a saved command\n",
         Op::Add => ADD_LONG_HELP,
         Op::Remove => REMOVE_LONG_HELP,
         Op::List => LIST_LONG_HELP,
@@ -26,7 +25,6 @@ pub fn print_op_help(op: Op) {
 pub fn print_op_usage(op: Op) {
     use defines::*;
     let usage = match op {
-        Op::Exec => "<NAME>",
         Op::Add => ADD_LONG_USAGE,
         Op::Remove => REMOVE_LONG_USAGE,
         Op::List => LIST_LONG_USAGE,
@@ -37,7 +35,6 @@ pub fn print_op_usage(op: Op) {
 
 #[derive(Debug, PartialEq)]
 pub enum Op {
-    Exec,
     Add,
     Remove,
     List,
@@ -48,7 +45,6 @@ impl Display for Op {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use Op::*;
         let s = match self {
-            Exec => "exec",
             Add => "-a|--add",
             Remove => "-r|--remove",
             List => "-l|--list",
@@ -184,11 +180,6 @@ pub fn parse_args() -> anyhow::Result<CxdArgs> {
 
     // Id (shared between remove and list)
     args.id = pargs.contains(["-i", "--id"]);
-
-    // Default to Exec if no op specified
-    if args.op.is_none() {
-        args.op.insert(Op::Exec);
-    }
 
     for arg in pargs.finish() {
         args.op_args.push(arg.to_string_lossy().into());

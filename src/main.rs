@@ -21,7 +21,6 @@ fn main() -> anyhow::Result<()> {
     match cli_args.help {
         Some(HelpType::Long) => {
             match cli_args.op {
-                Some(Op::Exec) => print_long_help(),
                 Some(op) => print_op_help(op),
                 None => print_long_help(),
             }
@@ -58,8 +57,8 @@ fn main() -> anyhow::Result<()> {
 
     let c = CommandStore::new(&cache_file)?;
 
-    match cli_args.op.unwrap() {
-        Op::Add => {
+    match cli_args.op {
+        Some(Op::Add) => {
             if cli_args.op_args.len() < 2 {
                 anyhow::bail!(
                     "Not enough arguments for add. Expected 2 or more, found {}",
@@ -91,7 +90,7 @@ fn main() -> anyhow::Result<()> {
                 ))?
             }
         }
-        Op::Remove => {
+        Some(Op::Remove) => {
             if cli_args.op_args.len() != 1 {
                 anyhow::bail!(
                     "Wrong number of arguments for remove. Expected 1, found {}",
@@ -111,7 +110,31 @@ fn main() -> anyhow::Result<()> {
                 println!("No matching command found, nothing was deleted");
             }
         }
-        Op::Exec => {
+        Some(Op::List) => {
+            if cli_args.id {
+                for cmd in c.fetch_all()? {
+                    println!("{:+}", cmd);
+                }
+            } else {
+                for cmd in c.fetch_all()? {
+                    println!("{}", cmd);
+                }
+            }
+        }
+        Some(Op::Clear) => {
+            print!("This will remove all saved commands from the store. Continue? [yn]: ");
+            std::io::stdout().flush()?;
+            let response = std::io::stdin()
+                .lock()
+                .lines()
+                .next()
+                .context("Failed to read response from stdin")??;
+            if response.to_lowercase() == "y" {
+                std::fs::remove_file(cache_file)?;
+            }
+        }
+        // Indicates an execution operation
+        None => {
             if cli_args.op_args.len() != 1 {
                 anyhow::bail!(
                     "Wrong number of arguments. Expected 1, found {}",
@@ -123,29 +146,6 @@ fn main() -> anyhow::Result<()> {
             match cmd {
                 Some(c) => c.exec()?,
                 None => anyhow::bail!("No command found: {}", cmd_name),
-            }
-        }
-        Op::List => {
-            if cli_args.id {
-                for cmd in c.fetch_all()? {
-                    println!("{:+}", cmd);
-                }
-            } else {
-                for cmd in c.fetch_all()? {
-                    println!("{}", cmd);
-                }
-            }
-        }
-        Op::Clear => {
-            print!("This will remove all saved commands from the store. Continue? [yn]: ");
-            std::io::stdout().flush()?;
-            let response = std::io::stdin()
-                .lock()
-                .lines()
-                .next()
-                .context("Failed to read response from stdin")??;
-            if response.to_lowercase() == "y" {
-                std::fs::remove_file(cache_file)?;
             }
         }
     }
