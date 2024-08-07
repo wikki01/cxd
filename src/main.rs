@@ -1,5 +1,4 @@
 #![allow(unused)]
-use anyhow::Context;
 use std::{
     io::{BufRead, Write},
     path::PathBuf,
@@ -14,9 +13,12 @@ use command_store::CommandStore;
 mod cli;
 use cli::{print_long_help, print_op_help, print_short_help, HelpType};
 
+mod error;
+use error::{CxdError, Result};
+
 use crate::cli::Op;
 
-fn main() -> anyhow::Result<()> {
+fn main() -> Result<()> {
     let mut cli_args = cli::parse_args()?;
     match cli_args.help {
         Some(HelpType::Long) => {
@@ -52,25 +54,33 @@ fn main() -> anyhow::Result<()> {
             } else {
                 Some(PathBuf::from(p).join(".cache").join("cxd.cache"))
             }
-        }))
-        .context("No suitable path found for cache file")?;
+        }));
+
+    if let None = cache_file {
+        return Err(CxdError::Env(
+            "no suitable path found for cache file".into(),
+        ));
+    }
+    let cache_file = cache_file.unwrap();
 
     let c = CommandStore::new(&cache_file)?;
 
     match cli_args.op {
         Some(Op::Add) => {
             if cli_args.op_args.len() < 2 {
-                anyhow::bail!(
-                    "Not enough arguments for add. Expected 2 or more, found {}",
-                    cli_args.op_args.len()
-                );
+                return Err(CxdError::WrongArgumentCount(
+                    "add".into(),
+                    2,
+                    cli_args.op_args.len(),
+                ));
             }
             let name = cli_args.op_args[0].to_owned();
             let command = cli_args.op_args[1].to_owned();
             let mut args = cli_args.op_args.split_off(2);
             let mut dir = PathBuf::new();
             if cli_args.cwd {
-                dir = std::env::current_dir()?;
+                dir = std::env::current_dir()
+                    .map_err(|e| CxdError::Env(format!("failed to read env: {:?}", e)))?;
             } else if let Some(d) = cli_args.dir {
                 dir = d.into();
             }
@@ -85,22 +95,24 @@ fn main() -> anyhow::Result<()> {
             if c.insert(&cmd)? {
                 println!("Created {cmd}");
             } else {
-                Err(anyhow::anyhow!(
-                    "Failed to create command {name}: already exists"
-                ))?
+                return Err(CxdError::CommandExists(name));
             }
         }
         Some(Op::Remove) => {
             if cli_args.op_args.len() != 1 {
-                anyhow::bail!(
-                    "Wrong number of arguments for remove. Expected 1, found {}",
-                    cli_args.op_args.len()
-                );
+                return Err(CxdError::WrongArgumentCount(
+                    "remove".into(),
+                    1,
+                    cli_args.op_args.len(),
+                ));
             }
             let cmd = &cli_args.op_args[0];
             let res;
             if cli_args.id {
-                res = c.delete_by_id(cmd.parse().context("ID is not a number")?)?;
+                res = c.delete_by_id(
+                    cmd.parse()
+                        .map_err(|_| CxdError::InvalidArgument(cmd.into(), "number".into()))?,
+                )?;
             } else {
                 res = c.delete_by_name(&cmd)?
             }
@@ -128,7 +140,7 @@ fn main() -> anyhow::Result<()> {
                 .lock()
                 .lines()
                 .next()
-                .context("Failed to read response from stdin")??;
+                .ok_or(CxdError::Stdin)??;
             if response.to_lowercase() == "y" {
                 std::fs::remove_file(cache_file)?;
             }
@@ -136,16 +148,17 @@ fn main() -> anyhow::Result<()> {
         // Indicates an execution operation
         None => {
             if cli_args.op_args.len() != 1 {
-                anyhow::bail!(
-                    "Wrong number of arguments. Expected 1, found {}",
-                    cli_args.op_args.len()
-                );
+                return Err(CxdError::WrongArgumentCount(
+                    "exec".into(),
+                    1,
+                    cli_args.op_args.len(),
+                ));
             }
             let cmd_name = &cli_args.op_args[0];
             let cmd = c.get_by_name(cmd_name)?;
             match cmd {
                 Some(c) => c.exec()?,
-                None => anyhow::bail!("No command found: {}", cmd_name),
+                None => return Err(CxdError::CommandNotFound(cmd_name.into())),
             }
         }
     }

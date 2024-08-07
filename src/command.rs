@@ -1,6 +1,9 @@
 use std::{os::unix::process::CommandExt, path::PathBuf};
 
-use crate::command_store::{ArgRow, CmdRow, EnvRow};
+use crate::{
+    command_store::{ArgRow, CmdRow, EnvRow},
+    error::Result,
+};
 
 #[derive(Debug)]
 pub struct Command {
@@ -25,7 +28,7 @@ impl Command {
         }
     }
 
-    pub fn exec(self) -> anyhow::Result<()> {
+    pub fn exec(self) -> Result<()> {
         if self.dir.components().next().is_some() {
             std::env::set_current_dir(self.dir)?;
         }

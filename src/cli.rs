@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use crate::error::{CxdError, Result};
+
 mod defines;
 
 pub fn print_long_help() {
@@ -102,7 +104,7 @@ pub fn find_add_args() -> Option<usize> {
         })
 }
 
-pub fn parse_args() -> anyhow::Result<CxdArgs> {
+pub fn parse_args() -> Result<CxdArgs> {
     let mut raw_args: Vec<_> = std::env::args_os().collect();
     let mut args = CxdArgs::default();
     let mut trunc = None;
@@ -131,44 +133,61 @@ pub fn parse_args() -> anyhow::Result<CxdArgs> {
         let old = args.op.replace(Op::Remove);
         if let Some(old) = old {
             print_short_help();
-            anyhow::bail!("Operation {} and {} are incompatible", Op::Remove, old);
+            println!();
+            return Err(CxdError::IncompatibleOperations(Op::Remove, old));
         }
     }
     if pargs.contains(["-l", "--list"]) {
         let old = args.op.replace(Op::List);
         if let Some(old) = old {
             print_short_help();
-            anyhow::bail!("Operation {} and {} are incompatible", Op::List, old);
+            println!();
+            return Err(CxdError::IncompatibleOperations(Op::List, old));
         }
     }
     if pargs.contains("--clear") {
         let old = args.op.replace(Op::Clear);
         if let Some(old) = old {
             print_short_help();
-            anyhow::bail!("Operation {} and {} are incompatible", Op::Clear, old);
+            println!();
+            return Err(CxdError::IncompatibleOperations(Op::Clear, old));
         }
     }
 
     // Add-specific flags
+    if pargs.contains(["-c", "--cwd"]) {
+        if args.op != Some(Op::Add) {
+            return Err(CxdError::RequiresOption(
+                "-c, --cwd".into(),
+                "-a, --add".into(),
+            ));
+        }
+    }
     args.cwd = pargs.contains(["-c", "--cwd"]);
     if let Some(path) = pargs.opt_value_from_str(["-d", "--dir"])? {
         if args.cwd {
-            print_op_usage(Op::Add);
-            anyhow::bail!("Options -d, --dir and -c, --cwd are incompatible");
+            return Err(CxdError::IncompatibleOptions(
+                "-d, --dir".into(),
+                "-c, --cwd".into(),
+            ));
         } else if args.op != Some(Op::Add) {
-            print_op_usage(Op::Add);
-            anyhow::bail!("Option -d, --dir requires operation -a, --add");
+            return Err(CxdError::RequiresOption(
+                "-d, --dir".into(),
+                "-a, --add".into(),
+            ));
         }
         args.dir = Some(path);
     }
     while let Some(pair) = pargs.opt_value_from_str::<_, String>(["-e", "--env"])? {
         if args.op != Some(Op::Add) {
-            print_op_usage(Op::Add);
-            anyhow::bail!("Option -e, --env requires operation -a, --add");
+            return Err(CxdError::RequiresOption(
+                "-e, --env".into(),
+                "-a, --add".into(),
+            ));
         }
         match pair.split_once('=') {
             Some((k, v)) => args.env.push((k.to_owned(), v.to_owned())),
-            None => anyhow::bail!("Failed to parse <KEY>=<VAL> pair: {}", pair),
+            None => return Err(CxdError::InvalidArgument(pair, "<KEY>=<VALUE".into())),
         }
     }
     if let Some(Op::Add) = &mut args.op {

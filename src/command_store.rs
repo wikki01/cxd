@@ -1,6 +1,9 @@
 use std::path::{Path, PathBuf};
 
-use crate::command::Command;
+use crate::{
+    command::Command,
+    error::{CxdError, Result},
+};
 use rusqlite::{ffi::Error, Connection, ErrorCode};
 
 mod arg_row;
@@ -16,7 +19,7 @@ pub struct CommandStore {
 }
 
 impl CommandStore {
-    pub fn new<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+    pub fn new<P: AsRef<Path>>(path: P) -> Result<Self> {
         let c = Connection::open(path)?;
         // Enable foreign key support
         c.execute("PRAGMA foreign_keys = ON", ())?;
@@ -26,7 +29,7 @@ impl CommandStore {
         Ok(Self { c })
     }
 
-    pub fn insert(&self, cmd: &Command) -> anyhow::Result<bool> {
+    pub fn insert(&self, cmd: &Command) -> Result<bool> {
         // Creating command entry
         let mut command_stmt = self
             .c
@@ -48,8 +51,8 @@ impl CommandStore {
                 // Already exists
                 return Ok(false);
             }
-            Err(e) => Err(anyhow::anyhow!("Insert failed: {:?}", e))?,
-            _ => Err(anyhow::anyhow!("Insert failed: No rows created"))?,
+            Err(e) => Err(e)?,
+            Ok(None) => Err(CxdError::CommandNotFound(cmd.name.clone()))?,
         };
 
         // Creating args
@@ -70,13 +73,13 @@ impl CommandStore {
         Ok(true)
     }
 
-    pub fn get_by_name(&self, name: &str) -> anyhow::Result<Option<Command>> {
+    pub fn get_by_name(&self, name: &str) -> Result<Option<Command>> {
         let mut command_stmt = self.c.prepare("SELECT * FROM command WHERE name = ?1")?;
         let mut rows = command_stmt.query([name])?;
         Ok(self.assemble(&mut rows)?.pop())
     }
 
-    pub fn delete_by_name(&self, name: &str) -> anyhow::Result<bool> {
+    pub fn delete_by_name(&self, name: &str) -> Result<bool> {
         let mut delete_cmd_stmt = self.c.prepare("DELETE FROM command WHERE name = ?1")?;
         let rows = delete_cmd_stmt.execute([name])?;
 
@@ -87,7 +90,7 @@ impl CommandStore {
         }
     }
 
-    pub fn delete_by_id(&self, id: i64) -> anyhow::Result<bool> {
+    pub fn delete_by_id(&self, id: i64) -> Result<bool> {
         let mut delete_cmd_stmt = self.c.prepare("DELETE FROM command WHERE id = ?1")?;
         let rows = delete_cmd_stmt.execute([id])?;
 
@@ -98,7 +101,7 @@ impl CommandStore {
         }
     }
 
-    pub fn fetch_all(&self) -> anyhow::Result<Vec<Command>> {
+    pub fn fetch_all(&self) -> Result<Vec<Command>> {
         let mut command_stmt = self.c.prepare("SELECT * FROM command")?;
         let mut rows = command_stmt.query([])?;
         self.assemble(&mut rows)
@@ -106,7 +109,7 @@ impl CommandStore {
 
     /// Assembles a list of row objects into a list of Command objects.
     /// Performs subqueries to fetch rows with a FK to the suppled row.
-    fn assemble(&self, rows: &mut rusqlite::Rows<'_>) -> anyhow::Result<Vec<Command>> {
+    fn assemble(&self, rows: &mut rusqlite::Rows<'_>) -> Result<Vec<Command>> {
         let mut args_stmt = self.c.prepare("SELECT * FROM arg WHERE command_id = ?1")?;
         let mut envs_stmt = self.c.prepare("SELECT * FROM env WHERE command_id = ?1")?;
 
