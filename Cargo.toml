@@ -1,7 +1,14 @@
 [package]
 name = "cxd"
+repository = "https://github.com/wikki01/cxd"
+description = "a command for commands"
 version = "0.1.0"
+authors = ["wikki <wikki_0@proton.me>"]
+license = "MIT"
 edition = "2021"
+
+keywords = ["cli", "tool", "workflow", "command", "utility"]
+categories = ["command-line-utilities", "development-tools"]
 
 [profile.release]
 strip = true
