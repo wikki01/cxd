@@ -214,12 +214,6 @@ pub fn parse_args() -> Result<CxdArgs> {
             }
         }
     }
-    if let Some(Op::Add) = &mut args.op {
-        // Adding 'add' arguments since we chopped them off at the beginning
-        for arg in trunc.unwrap_or_default() {
-            args.op_args.push(arg.to_string_lossy().into());
-        }
-    }
 
     // Remove-specific arguments
     if pargs.contains(["-i", "--id"]) {
@@ -234,6 +228,19 @@ pub fn parse_args() -> Result<CxdArgs> {
 
     for arg in pargs.finish() {
         args.op_args.push(arg.to_string_lossy().into());
+    }
+
+    if let Some(Op::Add) = &mut args.op {
+        if args.op_args.len() > 0 {
+            return Err(CxdError::ArgumentParse {
+                arg: args.op_args.join(" "),
+                reason: "unexpected argument".into(),
+            })?;
+        }
+        // Adding 'add' arguments since we chopped them off at the beginning
+        for arg in trunc.unwrap_or_default() {
+            args.op_args.push(arg.to_string_lossy().into());
+        }
     }
     Ok(args)
 }
