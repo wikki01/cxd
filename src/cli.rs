@@ -80,6 +80,14 @@ pub struct CxdArgs {
     pub version: bool,
 }
 
+/// This function is before handing off the parsing to `pico_args`. Add (`--add`) has a special
+/// property where it must slurp arbitrary arguments, without colliding with `cxd`'s arguments.
+///
+/// For example, `cxd --add ls_help ls --help`. We need to capture ["ls", "--help"] without
+/// interpreting `--help` as an option for `cxd`.
+///
+/// This looks through the arguments, and if `--add` is specified, returns the arg position of the
+/// first argument to `--add`, `<NAME>`.
 pub fn find_add_args() -> Option<usize> {
     // Add is greedy, and pico-args doesn't like that much
 
@@ -110,6 +118,9 @@ pub fn find_add_args() -> Option<usize> {
         })
 }
 
+/// Parse CLI arguments into loosely validated struct
+///
+/// Invalid flag dependencies and conflicts are returned as `Err`
 pub fn parse_args() -> Result<CxdArgs> {
     let mut raw_args: Vec<_> = std::env::args_os().collect();
     let mut args = CxdArgs::default();

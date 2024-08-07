@@ -21,7 +21,7 @@ impl Command {
         Self {
             id: cmd_row.id,
             name: cmd_row.name,
-            command: cmd_row.command,
+            command: cmd_row.cmd,
             dir: cmd_row.dir.into(),
             args: arg_rows.into_iter().map(|a| a.data).collect(),
             envs: env_rows.into_iter().map(|a| (a.key, a.value)).collect(),
@@ -49,7 +49,7 @@ impl std::fmt::Display for Command {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "[{}]: {}", self.id, self.name)?;
         if self.envs.len() == 1 {
-            writeln!(f, "  env: {}={}", self.envs[0].0, self.envs[0].1);
+            writeln!(f, "  env: {}={}", self.envs[0].0, self.envs[0].1)?;
         } else if self.envs.len() > 1 {
             writeln!(f, "  env:")?;
             for (k, v) in self.envs.iter() {
@@ -59,7 +59,7 @@ impl std::fmt::Display for Command {
         if self.dir.components().next().is_some() {
             writeln!(f, "  dir: {}", self.dir.to_str().unwrap_or("invalid path"))?;
         }
-        write!(f, "  cmd: {} {}", self.command, self.args.join(" "));
+        write!(f, "  cmd: {} {}", self.command, self.args.join(" "))?;
         Ok(())
     }
 }

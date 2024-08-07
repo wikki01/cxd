@@ -1,4 +1,3 @@
-#![allow(unused)]
 use std::{
     io::{BufRead, Write},
     path::PathBuf,
@@ -78,7 +77,7 @@ fn main() -> Result<()> {
             }
             let name = cli_args.op_args[0].to_owned();
             let command = cli_args.op_args[1].to_owned();
-            let mut args = cli_args.op_args.split_off(2);
+            let args = cli_args.op_args.split_off(2);
             let mut dir = PathBuf::new();
             if cli_args.cwd {
                 dir = std::env::current_dir()?;
