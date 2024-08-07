@@ -2,11 +2,12 @@
 
 use const_format::{concatcp, str_replace};
 
-pub const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub const USAGE: &str = "cxd [OPTIONS] <NAME>|<OPERATION>";
 
 const HELP_ARG_DESC: &str = "Show this help message";
+const VERSION_ARG_DESC: &str = "Show the version string";
 
 const FILE_DESC: &str = "File to use as the backing command cache";
 const FILE_LONG_USAGE: &str = "-f, --file";
@@ -29,6 +30,7 @@ Add Options:
   -d, --dir DIR      Save DIR as command's working directory
   -e, --env ENV=VAL  Save an env variable to the command's environment
   -h, --help         "#, HELP_ARG_DESC, r#"
+  --version          "#, VERSION_ARG_DESC, r#"
 "#);
 
 const REMOVE_DESC: &str = "Remove a command from the database";
@@ -41,6 +43,7 @@ Arguments:
 Remove Options:
   -i, --id ID        Interpret SELECTOR as the command's internal ID
   -h, --help         "#, HELP_ARG_DESC, r#"
+  --version          "#, VERSION_ARG_DESC, r#"
 "#);
 
 pub const LIST_DESC: &str = "List available commands";
@@ -49,6 +52,7 @@ pub const LIST_LONG_HELP: &str = concatcp!(LIST_DESC, r#"
 
 List Options:
   -h, --help         "#, HELP_ARG_DESC, r#"
+  --version          "#, VERSION_ARG_DESC, r#"
 "#);
 
 pub const CLEAR_LONG_USAGE: &str = "--clear";
@@ -57,6 +61,7 @@ pub const CLEAR_LONG_HELP: &str = concatcp!(CLEAR_DESC, r#"
 
 Clear Options:
   -h, --help         "#, HELP_ARG_DESC, r#"
+  --version          "#, VERSION_ARG_DESC, r#"
 "#);
 
 pub const LONG_HELP: &str = concatcp!(
@@ -74,6 +79,9 @@ Options:
 
   --help
       "#, HELP_ARG_DESC, r#"
+
+  --version      
+      "#, VERSION_ARG_DESC, r#"
 
 Operations:
   "#, ADD_LONG_USAGE, r#"
@@ -105,4 +113,5 @@ Operations:
   --clear                          "#, CLEAR_DESC, r#"
   -h                               "#, HELP_ARG_DESC, r#"
   --help                           Show the long version of this help message
+  --version                        "#, VERSION_ARG_DESC, r#"
 "#);

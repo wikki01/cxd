@@ -11,7 +11,7 @@ mod command_store;
 use command_store::CommandStore;
 
 mod cli;
-use cli::{print_long_help, print_op_help, print_short_help, HelpType};
+use cli::{print_long_help, print_op_help, print_short_help, print_version, HelpType};
 
 mod error;
 use error::{CxdError, Result};
@@ -33,6 +33,10 @@ fn main() -> Result<()> {
             return Ok(());
         }
         _ => {}
+    }
+    if cli_args.version {
+        print_version();
+        return Ok(());
     }
 
     let cache_file = cli_args

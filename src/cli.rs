@@ -4,6 +4,11 @@ use crate::error::{CxdError, Result};
 
 mod defines;
 
+pub fn print_version() {
+    // Per GNU standards, the version-proper should be after the last space
+    println!("cxd {}", defines::VERSION);
+}
+
 pub fn print_long_help() {
     print!("{}", defines::LONG_HELP);
 }
@@ -72,6 +77,7 @@ pub struct CxdArgs {
     pub dir: Option<String>,
     pub id: bool,
     pub help: Option<HelpType>,
+    pub version: bool,
 }
 
 pub fn find_add_args() -> Option<usize> {
@@ -120,6 +126,9 @@ pub fn parse_args() -> Result<CxdArgs> {
     }
     if pargs.contains("--help") {
         args.help = Some(HelpType::Long);
+    }
+    if pargs.contains("--version") {
+        args.version = true;
     }
     if let Some(path) = pargs.opt_value_from_str(["-f", "--file"])? {
         args.file = Some(path);
