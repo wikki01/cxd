@@ -8,6 +8,12 @@ custom scripts and Makefiles to each directory. This allowed me to not have to r
 `bash history` to remember my specific commands. However, after one too many `git-merge`
 events overwriting my temporary Makefiles, I wrote `cxd`.
 
+## Installation
+
+```sh
+cargo install cxd
+```
+
 ## Use
 `cxd` uses a `sqlite` database to save commands and their respective directories to execute
 at a later time. Database cache files can be saved and reused across devices. However,
@@ -88,8 +94,8 @@ For example, imagine you want two separate cache files, one for play and one for
 
 Then you can add the following to your `.bashrc`, `.zshrc`, or equivalent.
 ```sh
-alias work="cxd -f .cache/cxd.work.cache"
+alias build="cxd -f .cache/cxd.build.cache"
 alias play="cxd -f .cache/cxd.play.cache"
 ```
 
-This allows you to run `cxd` with each cache file as if it were two different commands, `work` and `play`.
+This allows you to run `cxd` with each cache file as if it were two different commands, `build` and `play`.
