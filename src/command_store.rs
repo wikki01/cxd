@@ -29,18 +29,18 @@ impl CommandStore {
         Ok(Self { c })
     }
 
-    pub fn insert(&self, cmd: &Command) -> Result<bool> {
+    pub fn insert(&self, cmd: &Command) -> Result<Option<i64>> {
         // Creating command entry
-        let mut command_stmt = self
-            .c
-            .prepare("INSERT INTO command (name, command, dir) VALUES (?1, ?2, ?3) RETURNING *")?;
+        let mut command_stmt = self.c.prepare(
+            "INSERT INTO command (name, command, dir) VALUES (?1, ?2, ?3) RETURNING (id)",
+        )?;
         let mut result = command_stmt.query((
             &cmd.name,
             &cmd.command,
             cmd.dir.to_str().unwrap_or_default(),
         ))?;
-        let command_row: CmdRow = match result.next() {
-            Ok(Some(row)) => CmdRow::try_from(row)?,
+        let id: i64 = match result.next() {
+            Ok(Some(row)) => row.get("id")?,
             Err(rusqlite::Error::SqliteFailure(
                 Error {
                     code: ErrorCode::ConstraintViolation,
@@ -49,7 +49,7 @@ impl CommandStore {
                 _,
             )) => {
                 // Already exists
-                return Ok(false);
+                return Ok(None);
             }
             Err(e) => Err(e)?,
             Ok(None) => Err(CxdError::CommandNotFound(cmd.name.clone()))?,
@@ -60,7 +60,7 @@ impl CommandStore {
             .c
             .prepare("INSERT INTO arg (data, command_id) VALUES (?1, ?2)")?;
         for arg in &cmd.args {
-            args_stmt.execute((arg, command_row.id))?;
+            args_stmt.execute((arg, id))?;
         }
 
         // Creating envs
@@ -68,9 +68,9 @@ impl CommandStore {
             .c
             .prepare("INSERT INTO env (key, value, command_id) VALUES (?1, ?2, ?3)")?;
         for env in &cmd.envs {
-            envs_stmt.execute((&env.0, &env.1, command_row.id))?;
+            envs_stmt.execute((&env.0, &env.1, id))?;
         }
-        Ok(true)
+        Ok(Some(id))
     }
 
     pub fn get_by_name(&self, name: &str) -> Result<Option<Command>> {
@@ -79,26 +79,20 @@ impl CommandStore {
         Ok(self.assemble(&mut rows)?.pop())
     }
 
-    pub fn delete_by_name(&self, name: &str) -> Result<bool> {
-        let mut delete_cmd_stmt = self.c.prepare("DELETE FROM command WHERE name = ?1")?;
-        let rows = delete_cmd_stmt.execute([name])?;
-
-        if rows != 0 {
-            Ok(true)
-        } else {
-            Ok(false)
-        }
+    pub fn delete_by_name(&self, name: &str) -> Result<Option<Command>> {
+        let mut delete_cmd_stmt = self
+            .c
+            .prepare("DELETE FROM command WHERE name = ?1 RETURNING *")?;
+        let mut rows = delete_cmd_stmt.query([name])?;
+        Ok(self.assemble(&mut rows)?.pop())
     }
 
-    pub fn delete_by_id(&self, id: i64) -> Result<bool> {
-        let mut delete_cmd_stmt = self.c.prepare("DELETE FROM command WHERE id = ?1")?;
-        let rows = delete_cmd_stmt.execute([id])?;
-
-        if rows != 0 {
-            Ok(true)
-        } else {
-            Ok(false)
-        }
+    pub fn delete_by_id(&self, id: i64) -> Result<Option<Command>> {
+        let mut delete_cmd_stmt = self
+            .c
+            .prepare("DELETE FROM command WHERE id = ?1 RETURNING *")?;
+        let mut rows = delete_cmd_stmt.query([id])?;
+        Ok(self.assemble(&mut rows)?.pop())
     }
 
     pub fn fetch_all(&self) -> Result<Vec<Command>> {

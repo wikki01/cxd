@@ -85,7 +85,7 @@ fn main() -> Result<()> {
             } else if let Some(d) = cli_args.dir {
                 dir = d.into();
             }
-            let cmd = Command {
+            let mut cmd = Command {
                 id: 0,
                 name: name.clone(),
                 command,
@@ -93,8 +93,9 @@ fn main() -> Result<()> {
                 envs: cli_args.env,
                 dir,
             };
-            if c.insert(&cmd)? {
-                println!("Created command: {cmd}");
+            if let Some(id) = c.insert(&cmd)? {
+                cmd.id = id;
+                println!("Created {cmd}");
             } else {
                 return Err(CxdError::CommandExists(name));
             }
@@ -117,15 +118,15 @@ fn main() -> Result<()> {
             } else {
                 res = c.delete_by_name(&cmd)?
             }
-            if res {
-                println!("Removed command {}", cmd);
+            if let Some(cmd) = res {
+                println!("Removed {}", cmd);
             } else {
                 println!("No matching command found, nothing was deleted");
             }
         }
         Some(Op::List) => {
             for cmd in c.fetch_all()? {
-                println!("{}", cmd);
+                println!("{}\n", cmd);
             }
         }
         Some(Op::Clear) => {

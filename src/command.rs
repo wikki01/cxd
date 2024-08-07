@@ -59,7 +59,7 @@ impl std::fmt::Display for Command {
         if self.dir.components().next().is_some() {
             writeln!(f, "  dir: {}", self.dir.to_str().unwrap_or("invalid path"))?;
         }
-        writeln!(f, "  cmd: {} {}", self.command, self.args.join(" "));
+        write!(f, "  cmd: {} {}", self.command, self.args.join(" "));
         Ok(())
     }
 }
