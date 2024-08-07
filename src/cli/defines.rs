@@ -48,13 +48,16 @@ pub const LIST_LONG_USAGE: &str = "-l, --list [OPTIONS]";
 pub const LIST_LONG_HELP: &str = concatcp!(LIST_DESC, r#"
 
 List Options:
-  -i, --id           Show internal IDs of commands
   -h, --help         "#, HELP_ARG_DESC, r#"
 "#);
 
 pub const CLEAR_LONG_USAGE: &str = "--clear";
 pub const CLEAR_DESC: &str = "Clear all commands from the database";
-pub const CLEAR_LONG_HELP: &str = CLEAR_DESC; // Nothing more to add
+pub const CLEAR_LONG_HELP: &str = concatcp!(CLEAR_DESC, r#"
+
+Clear Options:
+  -h, --help         "#, HELP_ARG_DESC, r#"
+"#);
 
 pub const LONG_HELP: &str = concatcp!(
 r#"Usage: "#, USAGE, r#"

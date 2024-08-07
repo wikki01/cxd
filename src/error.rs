@@ -16,10 +16,10 @@ pub enum CxdError {
     IncompatibleOperations(Op, Op),
 
     #[error("options {0} and {1} are incompatible")]
-    IncompatibleOptions(String, String),
+    OptionsIncompatible(String, String),
 
     #[error("option {name} requires operation {requires}")]
-    RequiresOption { name: String, requires: String },
+    OptionRequires { name: String, requires: String },
 
     #[error("{name} requires {requires} arguments, found {found}")]
     WrongArgumentCount {
@@ -40,10 +40,13 @@ pub enum CxdError {
     #[error("failed to read from stdin")]
     Stdin,
 
-    #[error("io error: {0:?}")]
+    #[error("io: {0}")]
     Io(#[from] std::io::Error),
 
-    #[error("sql error: {0:?}")]
+    #[error("exec {0}: {1}")]
+    Exec(String, std::io::Error),
+
+    #[error("sql: {0}")]
     Sql(#[from] rusqlite::Error),
 }
 

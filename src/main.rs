@@ -90,7 +90,7 @@ fn main() -> Result<()> {
                 dir,
             };
             if c.insert(&cmd)? {
-                println!("Created {cmd}");
+                println!("Created command: {cmd}");
             } else {
                 return Err(CxdError::CommandExists(name));
             }
@@ -114,20 +114,14 @@ fn main() -> Result<()> {
                 res = c.delete_by_name(&cmd)?
             }
             if res {
-                println!("Deleted {}", cmd);
+                println!("Removed command {}", cmd);
             } else {
                 println!("No matching command found, nothing was deleted");
             }
         }
         Some(Op::List) => {
-            if cli_args.id {
-                for cmd in c.fetch_all()? {
-                    println!("{:+}", cmd);
-                }
-            } else {
-                for cmd in c.fetch_all()? {
-                    println!("{}", cmd);
-                }
+            for cmd in c.fetch_all()? {
+                println!("{}", cmd);
             }
         }
         Some(Op::Clear) => {

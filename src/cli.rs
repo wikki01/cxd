@@ -111,7 +111,6 @@ pub fn parse_args() -> Result<CxdArgs> {
     if let Some(i) = find_add_args() {
         // Add is greedy, so we need to protect pico_args
         trunc = Some(raw_args.split_off(i + 1));
-        args.op = Some(Op::Add);
     }
     raw_args.remove(0); // Remove $0
     let mut pargs = pico_args::Arguments::from_vec(raw_args);
@@ -157,7 +156,7 @@ pub fn parse_args() -> Result<CxdArgs> {
     // Add-specific flags
     if pargs.contains(["-c", "--cwd"]) {
         if args.op != Some(Op::Add) {
-            return Err(CxdError::RequiresOption {
+            return Err(CxdError::OptionRequires {
                 name: "-c, --cwd".into(),
                 requires: "-a, --add".into(),
             });
@@ -166,12 +165,12 @@ pub fn parse_args() -> Result<CxdArgs> {
     args.cwd = pargs.contains(["-c", "--cwd"]);
     if let Some(path) = pargs.opt_value_from_str(["-d", "--dir"])? {
         if args.cwd {
-            return Err(CxdError::IncompatibleOptions(
+            return Err(CxdError::OptionsIncompatible(
                 "-d, --dir".into(),
                 "-c, --cwd".into(),
             ));
         } else if args.op != Some(Op::Add) {
-            return Err(CxdError::RequiresOption {
+            return Err(CxdError::OptionRequires {
                 name: "-d, --dir".into(),
                 requires: "-a, --add".into(),
             });
@@ -180,7 +179,7 @@ pub fn parse_args() -> Result<CxdArgs> {
     }
     while let Some(pair) = pargs.opt_value_from_str::<_, String>(["-e", "--env"])? {
         if args.op != Some(Op::Add) {
-            return Err(CxdError::RequiresOption {
+            return Err(CxdError::OptionRequires {
                 name: "-e, --env".into(),
                 requires: "-a, --add".into(),
             });
@@ -202,8 +201,16 @@ pub fn parse_args() -> Result<CxdArgs> {
         }
     }
 
-    // Id (shared between remove and list)
-    args.id = pargs.contains(["-i", "--id"]);
+    // Remove-specific arguments
+    if pargs.contains(["-i", "--id"]) {
+        if args.op != Some(Op::Remove) {
+            return Err(CxdError::OptionRequires {
+                name: "-i, --id".into(),
+                requires: "-r, --remove".into(),
+            });
+        }
+        args.id = true;
+    }
 
     for arg in pargs.finish() {
         args.op_args.push(arg.to_string_lossy().into());
