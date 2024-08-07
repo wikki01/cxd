@@ -57,9 +57,7 @@ fn main() -> Result<()> {
         }));
 
     if let None = cache_file {
-        return Err(CxdError::Env(
-            "no suitable path found for cache file".into(),
-        ));
+        return Err(CxdError::CachePath);
     }
     let cache_file = cache_file.unwrap();
 
@@ -68,19 +66,18 @@ fn main() -> Result<()> {
     match cli_args.op {
         Some(Op::Add) => {
             if cli_args.op_args.len() < 2 {
-                return Err(CxdError::WrongArgumentCount(
-                    "add".into(),
-                    2,
-                    cli_args.op_args.len(),
-                ));
+                return Err(CxdError::WrongArgumentCount {
+                    name: "add".into(),
+                    requires: 2,
+                    found: cli_args.op_args.len(),
+                });
             }
             let name = cli_args.op_args[0].to_owned();
             let command = cli_args.op_args[1].to_owned();
             let mut args = cli_args.op_args.split_off(2);
             let mut dir = PathBuf::new();
             if cli_args.cwd {
-                dir = std::env::current_dir()
-                    .map_err(|e| CxdError::Env(format!("failed to read env: {:?}", e)))?;
+                dir = std::env::current_dir()?;
             } else if let Some(d) = cli_args.dir {
                 dir = d.into();
             }
@@ -100,19 +97,19 @@ fn main() -> Result<()> {
         }
         Some(Op::Remove) => {
             if cli_args.op_args.len() != 1 {
-                return Err(CxdError::WrongArgumentCount(
-                    "remove".into(),
-                    1,
-                    cli_args.op_args.len(),
-                ));
+                return Err(CxdError::WrongArgumentCount {
+                    name: "remove".into(),
+                    requires: 1,
+                    found: cli_args.op_args.len(),
+                });
             }
             let cmd = &cli_args.op_args[0];
             let res;
             if cli_args.id {
-                res = c.delete_by_id(
-                    cmd.parse()
-                        .map_err(|_| CxdError::InvalidArgument(cmd.into(), "number".into()))?,
-                )?;
+                res = c.delete_by_id(cmd.parse().map_err(|_| CxdError::ArgumentParse {
+                    arg: cmd.into(),
+                    reason: "not an integer".into(),
+                })?)?;
             } else {
                 res = c.delete_by_name(&cmd)?
             }
@@ -148,11 +145,11 @@ fn main() -> Result<()> {
         // Indicates an execution operation
         None => {
             if cli_args.op_args.len() != 1 {
-                return Err(CxdError::WrongArgumentCount(
-                    "exec".into(),
-                    1,
-                    cli_args.op_args.len(),
-                ));
+                return Err(CxdError::WrongArgumentCount {
+                    name: "exec".into(),
+                    requires: 1,
+                    found: cli_args.op_args.len(),
+                });
             }
             let cmd_name = &cli_args.op_args[0];
             let cmd = c.get_by_name(cmd_name)?;

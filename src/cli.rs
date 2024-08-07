@@ -157,10 +157,10 @@ pub fn parse_args() -> Result<CxdArgs> {
     // Add-specific flags
     if pargs.contains(["-c", "--cwd"]) {
         if args.op != Some(Op::Add) {
-            return Err(CxdError::RequiresOption(
-                "-c, --cwd".into(),
-                "-a, --add".into(),
-            ));
+            return Err(CxdError::RequiresOption {
+                name: "-c, --cwd".into(),
+                requires: "-a, --add".into(),
+            });
         }
     }
     args.cwd = pargs.contains(["-c", "--cwd"]);
@@ -171,23 +171,28 @@ pub fn parse_args() -> Result<CxdArgs> {
                 "-c, --cwd".into(),
             ));
         } else if args.op != Some(Op::Add) {
-            return Err(CxdError::RequiresOption(
-                "-d, --dir".into(),
-                "-a, --add".into(),
-            ));
+            return Err(CxdError::RequiresOption {
+                name: "-d, --dir".into(),
+                requires: "-a, --add".into(),
+            });
         }
         args.dir = Some(path);
     }
     while let Some(pair) = pargs.opt_value_from_str::<_, String>(["-e", "--env"])? {
         if args.op != Some(Op::Add) {
-            return Err(CxdError::RequiresOption(
-                "-e, --env".into(),
-                "-a, --add".into(),
-            ));
+            return Err(CxdError::RequiresOption {
+                name: "-e, --env".into(),
+                requires: "-a, --add".into(),
+            });
         }
         match pair.split_once('=') {
             Some((k, v)) => args.env.push((k.to_owned(), v.to_owned())),
-            None => return Err(CxdError::InvalidArgument(pair, "<KEY>=<VALUE".into())),
+            None => {
+                return Err(CxdError::ArgumentParse {
+                    arg: pair,
+                    reason: "<KEY>=<VALUE>".into(),
+                })
+            }
         }
     }
     if let Some(Op::Add) = &mut args.op {
