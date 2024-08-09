@@ -8,6 +8,10 @@ custom scripts and Makefiles to each directory. This allowed me to not have to r
 `bash history` to remember my specific commands. However, after one too many `git-merge`
 events overwriting my temporary Makefiles, I wrote `cxd`.
 
+## Dependencies
+
+* `libsqlite3`
+
 ## Installation
 
 ```sh
@@ -90,7 +94,7 @@ cxd --clear
 It can be useful to segment cache files for specific commands. 
 A simple and ergonomic way to do this is to set aliases.
 
-For example, imagine you want two separate cache files, one for play and one for work.
+For example, imagine you want two separate cache files, one for playing media and one for building executables.
 
 Then you can add the following to your `.bashrc`, `.zshrc`, or equivalent.
 ```sh
