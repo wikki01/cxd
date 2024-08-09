@@ -105,13 +105,13 @@ Arguments:
 
 Options:
   -f, --file <FILE>                "#, FILE_DESC, r#"
+  -h                               "#, HELP_ARG_DESC, r#"
+  --help                           Show the long version of this help message
+  --version                        "#, VERSION_ARG_DESC, r#"
 
 Operations:
   -a, --add <NAME> <CMD> [ARG]...  "#, ADD_DESC, r#"
   -r, --remove <COMMAND>           "#, REMOVE_DESC, r#"
   -l, --list                       "#, LIST_DESC, r#"
   --clear                          "#, CLEAR_DESC, r#"
-  -h                               "#, HELP_ARG_DESC, r#"
-  --help                           Show the long version of this help message
-  --version                        "#, VERSION_ARG_DESC, r#"
 "#);
