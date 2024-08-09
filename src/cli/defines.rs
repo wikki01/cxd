@@ -7,6 +7,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const USAGE: &str = "cxd [OPTIONS] <NAME>|<OPERATION>";
 
 const HELP_ARG_DESC: &str = "Show this help message";
+const HELP_OP_ARG_DESC: &str = "Show a help message for this operation";
 const VERSION_ARG_DESC: &str = "Show the version string";
 
 const FILE_DESC: &str = "File to use as the backing command cache";
@@ -29,7 +30,7 @@ Add Options:
   -c, --cwd          Save CWD as command's working directory
   -d, --dir DIR      Save DIR as command's working directory
   -e, --env ENV=VAL  Save an env variable to the command's environment
-  -h, --help         "#, HELP_ARG_DESC, r#"
+  -h, --help         "#, HELP_OP_ARG_DESC, r#"
   --version          "#, VERSION_ARG_DESC, r#"
 "#);
 
@@ -42,7 +43,7 @@ Arguments:
 
 Remove Options:
   -i, --id ID        Interpret SELECTOR as the command's internal ID
-  -h, --help         "#, HELP_ARG_DESC, r#"
+  -h, --help         "#, HELP_OP_ARG_DESC, r#"
   --version          "#, VERSION_ARG_DESC, r#"
 "#);
 
@@ -51,7 +52,7 @@ pub const LIST_LONG_USAGE: &str = "-l, --list [OPTIONS]";
 pub const LIST_LONG_HELP: &str = concatcp!(LIST_DESC, r#"
 
 List Options:
-  -h, --help         "#, HELP_ARG_DESC, r#"
+  -h, --help         "#, HELP_OP_ARG_DESC, r#"
   --version          "#, VERSION_ARG_DESC, r#"
 "#);
 
@@ -60,7 +61,7 @@ pub const CLEAR_DESC: &str = "Clear all commands from the database";
 pub const CLEAR_LONG_HELP: &str = concatcp!(CLEAR_DESC, r#"
 
 Clear Options:
-  -h, --help         "#, HELP_ARG_DESC, r#"
+  -h, --help         "#, HELP_OP_ARG_DESC, r#"
   --version          "#, VERSION_ARG_DESC, r#"
 "#);
 
