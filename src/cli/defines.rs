@@ -67,7 +67,6 @@ Clear Options:
 
 pub const LONG_HELP: &str = concatcp!(
 r#"Usage: "#, USAGE, r#"
-
 Arguments:
   <NAME>   Name of command to execute
 
