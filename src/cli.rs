@@ -104,7 +104,13 @@ pub fn find_add_args() -> Option<usize> {
                     } else if skip_next {
                         skip_next = false;
                         false
-                    } else if a == "--env" || a == "-e" || a == "--dir" || a == "-d" {
+                    } else if a == "--env"
+                        || a == "-e"
+                        || a == "--dir"
+                        || a == "-d"
+                        || a == "--file"
+                        || a == "-f"
+                    {
                         skip_next = true;
                         false
                     } else if a == "--" {
