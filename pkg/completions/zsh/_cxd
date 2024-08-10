@@ -1,6 +1,9 @@
 #compdef cxd
 
+names=$(_call_program cxd $words[1] --list --short)
+
 _cxd() {
+    #printf "\n%s\n" $names
 
     _arguments \
         --version'[show the version string]' \
@@ -8,7 +11,7 @@ _cxd() {
         --help'[show a short help message]' \
         {-f,--file}'[database file]:(file):_files' \
       - execargs \
-        :name: \
+        :name:"($names)" \
       - addargs \
         {-a,--add}'[add a command]' \
         {-c,--cwd}'[save CWD to command]' \
@@ -19,6 +22,7 @@ _cxd() {
       - removeargs \
         {-r,--remove}'[remove a command]' \
         {-i,--id}'[remove by ID]' \
+        :name:"($names)" \
       - listargs \
         {-l,--list}'[list commands]' \
       - clearargs \
