@@ -52,6 +52,7 @@ pub const LIST_LONG_USAGE: &str = "-l, --list [OPTIONS]";
 pub const LIST_LONG_HELP: &str = concatcp!(LIST_DESC, r#"
 
 List Options:
+  -s, --short        Short output -- name only
   -h, --help         "#, HELP_OP_ARG_DESC, r#"
   --version          "#, VERSION_ARG_DESC, r#"
 "#);

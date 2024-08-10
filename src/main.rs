@@ -124,8 +124,14 @@ fn main() -> Result<()> {
             }
         }
         Some(Op::List) => {
-            for cmd in c.fetch_all()? {
-                println!("{}\n", cmd);
+            if cli_args.short {
+                for cmd in c.fetch_all()? {
+                    println!("{}", cmd.name);
+                }
+            } else {
+                for cmd in c.fetch_all()? {
+                    println!("{}\n", cmd);
+                }
             }
         }
         Some(Op::Clear) => {

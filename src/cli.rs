@@ -40,7 +40,7 @@ pub fn print_op_usage(op: Op) {
     print!("Usage: cxd {}\n", usage);
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Op {
     Add,
     Remove,
@@ -48,16 +48,21 @@ pub enum Op {
     Clear,
 }
 
+impl Op {
+    /// Assume 'primary' name of item is item 0
+    const fn names(&self) -> &[&'static str] {
+        match self {
+            Op::Add => &["--add", "-a"],
+            Op::Remove => &["--remove", "-r"],
+            Op::List => &["--list", "-l"],
+            Op::Clear => &["--clear"],
+        }
+    }
+}
+
 impl Display for Op {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use Op::*;
-        let s = match self {
-            Add => "-a|--add",
-            Remove => "-r|--remove",
-            List => "-l|--list",
-            Clear => "-c|--clear",
-        };
-        write!(f, "{}", s)
+        write!(f, "{}", self.names().join(", "))
     }
 }
 
@@ -76,6 +81,7 @@ pub struct CxdArgs {
     pub cwd: bool,
     pub dir: Option<String>,
     pub id: bool,
+    pub short: bool,
     pub help: Option<HelpType>,
     pub version: bool,
 }
@@ -137,6 +143,7 @@ pub fn parse_args() -> Result<CxdArgs> {
     }
     raw_args.remove(0); // Remove $0
     let mut pargs = pico_args::Arguments::from_vec(raw_args);
+
     // Parsing top level flags
     if pargs.contains("-h") {
         args.help = Some(HelpType::Short);
@@ -150,6 +157,7 @@ pub fn parse_args() -> Result<CxdArgs> {
     if let Some(path) = pargs.opt_value_from_str(["-f", "--file"])? {
         args.file = Some(path);
     }
+
     // Parsing operation
     if pargs.contains(["-a", "--add"]) {
         args.op = Some(Op::Add);
@@ -230,6 +238,17 @@ pub fn parse_args() -> Result<CxdArgs> {
             });
         }
         args.id = true;
+    }
+
+    // List-specific arguments
+    if pargs.contains(["-s", "--short"]) {
+        if args.op != Some(Op::List) {
+            return Err(CxdError::OptionRequires {
+                name: "-i, --id".into(),
+                requires: "-r, --remove".into(),
+            });
+        }
+        args.short = true;
     }
 
     for arg in pargs.finish() {
