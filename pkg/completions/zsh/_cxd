@@ -1,0 +1,28 @@
+#compdef cxd
+
+_cxd() {
+
+    _arguments \
+        --version'[show the version string]' \
+        -h'[show a short help message]' \
+        --help'[show a short help message]' \
+        {-f,--file}'[database file]:(file):_files' \
+      - execargs \
+        :name: \
+      - addargs \
+        {-a,--add}'[add a command]' \
+        {-c,--cwd}'[save CWD to command]' \
+        {-d,--dir}'[save DIR to command]' \
+        \*{-e,--env}'[save ENV to command]:(key=value):' \
+        :name: \
+        \*:::cmd:_cmdambivalent \
+      - removeargs \
+        {-r,--remove}'[remove a command]' \
+        {-i,--id}'[remove by ID]' \
+      - listargs \
+        {-l,--list}'[list commands]' \
+      - clearargs \
+        --clear'[clear database]'
+}
+
+_cxd
