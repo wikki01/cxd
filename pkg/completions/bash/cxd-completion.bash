@@ -123,11 +123,11 @@ _cxd() {
     local i=0
     for item in "${COMP_WORDS[@]}"; do
         for op in ${OPERATIONS[@]}; do
-            if [ "$item" = "$op" ]; then
+            if [ "$item" = "$op" ] && [[ "$item" =~ ^--?([a-z]{1}).*$ ]]; then
                 # Sets OP and OP_LOC if found. OP is the first letter of the operation name
-                OP=$(echo $op | sed -r 's/^--?([a-z]{1}).*$/\1/');
+                OP=${BASH_REMATCH[1]}; 
                 OP_LOC=$i
-                break 2
+                break 2;
             fi
         done
         i=$(( $i + 1 ))
