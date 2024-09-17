@@ -18,6 +18,17 @@ events overwriting my temporary Makefiles, I wrote `cxd`.
 cargo install cxd
 ```
 
+### Bash Completions
+Clone the files under `pkg/completions/bash/` to the first of the following directories.
+* `/usr/share/bash-completion/completions/`
+* (deprecated) `/etc/bash_completion.d/`
+
+### Zsh Completions
+Clone the files under `pkg/completions/zsh/` to any directory listed by `echo $fpath`.
+For example, on Debian 12 this includes `/usr/share/zsh/vendor-completions` by default.
+
+You may need to logout and login for these changes to take effect.
+
 ## Use
 `cxd` uses a `sqlite` database to save commands and their respective directories to execute
 at a later time. Database cache files can be saved and reused across devices. However,
