@@ -2,7 +2,7 @@
 name = "cxd"
 repository = "https://github.com/wikki01/cxd"
 description = "a command for commands"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["wikki <wikki_0@proton.me>"]
 license = "MIT"
 edition = "2021"
